@@ -3,13 +3,13 @@ use super::core::Updatable;
 use super::core::Clock;
 use ggez::input::mouse::MouseButton;
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 use super::numeric;
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub enum MouseButtonStatus {
-    MOUSE_PRESSED,
-    MOUSE_RELEASED,
+    MousePressed,
+    MouseReleased,
 }
 
 #[derive(Debug, Eq, PartialEq, Hash)]
@@ -28,9 +28,9 @@ impl MouseListener {
 
     pub fn new() -> MouseListener {
         let mut button_map = HashMap::new();
-        button_map.insert(MouseButton::Left, MouseButtonStatus::MOUSE_RELEASED);
-        button_map.insert(MouseButton::Middle, MouseButtonStatus::MOUSE_RELEASED);
-        button_map.insert(MouseButton::Right, MouseButtonStatus::MOUSE_RELEASED);
+        button_map.insert(MouseButton::Left, MouseButtonStatus::MouseReleased);
+        button_map.insert(MouseButton::Middle, MouseButtonStatus::MouseReleased);
+        button_map.insert(MouseButton::Right, MouseButtonStatus::MouseReleased);
 
         let mut events = HashMap::new();
         let mut tmp = HashMap::new();
@@ -72,17 +72,17 @@ impl MouseListener {
 
     fn check_button(ctx: &ggez::Context, button: MouseButton) -> MouseButtonStatus {
         if input::mouse::button_pressed(ctx, MouseButton::Left) {
-            MouseButtonStatus::MOUSE_PRESSED
+            MouseButtonStatus::MousePressed
         } else {
-            MouseButtonStatus::MOUSE_RELEASED
+            MouseButtonStatus::MouseReleased
         }
     }
 
     fn __flush_button_event(&mut self, button: MouseButton, current_state: &MouseButtonStatus) {
         if *current_state != self.button_map[&button] {
             let event = match *current_state {
-                MouseButtonStatus::MOUSE_PRESSED => MouseButtonEvent::Pressed,
-                MouseButtonStatus::MOUSE_RELEASED => MouseButtonEvent::Clicked,
+                MouseButtonStatus::MousePressed => MouseButtonEvent::Pressed,
+                MouseButtonStatus::MouseReleased => MouseButtonEvent::Clicked,
             };
             for f in &self.event_handlers[&button][&event] {
                 f();
