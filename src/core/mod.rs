@@ -33,7 +33,7 @@ impl<Args> ScheduledEvent<Args> {
 }
 
 pub trait Updatable {
-    fn update(t: Clock) -> Result<(), &'static str> {
+    fn update(&mut self, ctx: &ggez::Context, t: Clock) -> Result<(), &'static str> {
         Ok(())
     }
 }
