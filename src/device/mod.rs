@@ -88,7 +88,7 @@ impl MouseListener {
     }
 
     fn check_button(ctx: &ggez::Context, button: MouseButton) -> MouseButtonStatus {
-        if input::mouse::button_pressed(ctx, MouseButton::Left) {
+        if input::mouse::button_pressed(ctx, button) {
             MouseButtonStatus::MousePressed
         } else {
             MouseButtonStatus::MouseReleased
