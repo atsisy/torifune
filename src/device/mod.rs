@@ -20,7 +20,7 @@ pub enum MouseButtonEvent {
 }
 
 pub struct MouseListener {
-    last_clicked: numeric::Vector2f,
+    last_clicked: HashMap<MouseButton, numeric::Point2f>,
     button_map: HashMap<MouseButton, MouseButtonStatus>,
     event_handlers: HashMap<MouseButton, HashMap<MouseButtonEvent, Vec<Box<dyn Fn() -> i32>>>>,
 }
@@ -56,7 +56,11 @@ impl MouseListener {
                       ]);
         
         MouseListener {
-            last_clicked: numeric::Vector2f{x: 0.0, y: 0.0},
+            last_clicked: hash![
+                (MouseButton::Left, numeric::Point2f { x: 0.0, y: 0.0 }),
+                (MouseButton::Middle, numeric::Point2f { x: 0.0, y: 0.0 }),
+                (MouseButton::Right, numeric::Point2f  {x: 0.0, y: 0.0 })
+            ],
             button_map: button_map,
             event_handlers: events,
         }
@@ -91,14 +95,30 @@ impl MouseListener {
         }
     }
 
-    fn __flush_button_event(&mut self, button: MouseButton, current_state: &MouseButtonStatus) {
+    //
+    // 最後のクリック座標を返すメソッド
+    //
+    pub fn get_last_clicked(&self, button: MouseButton) -> numeric::Point2f {
+        match button {
+            MouseButton::Left | MouseButton::Middle | MouseButton::Right => self.last_clicked[&button],
+            _ => panic!("Other MouseButton is detected!!"),
+        }
+    }
+
+    fn __flush_button_event(&mut self, ctx: &ggez::Context, button: MouseButton, current_state: &MouseButtonStatus) {
         // 入力内容が以前と異なる
         if *current_state != self.button_map[&button] {
             
             // 操作を検知
             let event = match *current_state {
                 MouseButtonStatus::MousePressed => MouseButtonEvent::Pressed,
-                MouseButtonStatus::MouseReleased => MouseButtonEvent::Clicked,
+                MouseButtonStatus::MouseReleased => {
+
+                    // clickされた場合、last_clickにセット
+                    self.last_clicked.insert(button, self.get_position(ctx));
+                    
+                    MouseButtonEvent::Clicked
+                },
             };
 
             // ボタン・操作の情報を利用してクロージャのリストの要素を全て実行
@@ -109,12 +129,13 @@ impl MouseListener {
     }
 
     fn flush_button_event(&mut self,
+                          ctx: &ggez::Context,
                           l_state: &MouseButtonStatus,
                           m_state: &MouseButtonStatus,
                           r_state: &MouseButtonStatus) {
-        self.__flush_button_event(MouseButton::Left, l_state);
-        self.__flush_button_event(MouseButton::Middle, m_state);
-        self.__flush_button_event(MouseButton::Right, r_state);
+        self.__flush_button_event(ctx, MouseButton::Left, l_state);
+        self.__flush_button_event(ctx, MouseButton::Middle, m_state);
+        self.__flush_button_event(ctx, MouseButton::Right, r_state);
     }
 }
 
@@ -130,7 +151,7 @@ impl Updatable for MouseListener {
         //
         // 入力のイベントハンドラを実行する
         //
-        self.flush_button_event(&l_status, &m_status, &r_status);
+        self.flush_button_event(ctx, &l_status, &m_status, &r_status);
 
         self.button_map.insert(MouseButton::Left, l_status);
         self.button_map.insert(MouseButton::Middle, m_status);

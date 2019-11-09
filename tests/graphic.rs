@@ -59,7 +59,7 @@ impl ggez::event::EventHandler for State {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.mouse.update(ctx, 0);
         self.key.update(ctx, 0);
-        let p = self.mouse.get_position(ctx);
+        let p = self.mouse.get_last_clicked(MouseButton::Left);
         println!("{}, {}", p.x, p.y);
         Ok(())
     }
