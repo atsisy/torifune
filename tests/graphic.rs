@@ -9,6 +9,7 @@ struct State {
     frames: usize,
     text: graphics::Text,
     mouse: device::MouseListener,
+    key: device::KeyboardListener,
 }
 
 impl State {
@@ -21,6 +22,9 @@ impl State {
             frames: 0,
             text: text,
             mouse: device::MouseListener::new(),
+            key: device::KeyboardListener::new_masked(
+                vec![device::KeyInputDevice::GenericKeyboard],
+                vec![device::VirtualKey::Action1, device::VirtualKey::Action2]),
         };
 
         s.mouse
@@ -34,6 +38,18 @@ impl State {
                 device::MouseButtonEvent::Pressed,
                 &move || { println!("Pre"); 10 });
 
+        s.key
+            .register_event_handler(
+                device::VirtualKey::Action1,
+                device::KeyboardEvent::FirstPressed,
+                &move || { println!("Pre"); 10 });
+
+        s.key
+            .register_event_handler(
+                device::VirtualKey::Action2,
+                device::KeyboardEvent::FirstPressed,
+                &move || { println!("Pre"); 10 });
+
 
         Ok(s)
     }
@@ -42,6 +58,7 @@ impl State {
 impl ggez::event::EventHandler for State {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.mouse.update(ctx, 0);
+        self.key.update(ctx, 0);
         let p = self.mouse.get_position(ctx);
         println!("{}, {}", p.x, p.y);
         Ok(())
