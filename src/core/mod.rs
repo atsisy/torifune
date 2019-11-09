@@ -1,8 +1,21 @@
 pub type Clock = u64;
 
+#[macro_export]
+macro_rules! hash {
+    ( $( $t:expr),* ) => {
+        {
+            let mut temp_hash = HashMap::new();
+            $(
+                temp_hash.insert($t.0, $t.1);
+            )*
+                temp_hash
+        }
+    };
+}
+
 pub struct ScheduledEvent<Args> {
     run_time: Clock,
-    func: fn(Args) -> Result<(), &'static str>,
+    func: Box<dyn Fn(Args) -> Result<(), &'static str>>,
 }
 
 impl<Args> ScheduledEvent<Args> {
@@ -13,15 +26,16 @@ impl<Args> ScheduledEvent<Args> {
     /// ```
     ///     use trojan::core::*;
     ///
-    ///     let event = ScheduledEvent::new(|x: i32| {
+    ///     let event = ScheduledEvent::new(&move |x: i32| {
     ///         println!("Event is Called {}", x);
     ///         Ok(())
     ///     }, 10);
     /// ```
-    pub fn new(func: fn(Args) ->  Result<(), &'static str>, call_abs: Clock) -> ScheduledEvent<Args> {
-        ScheduledEvent { run_time: call_abs, func: func }
+    pub fn new<F>(func:&'static F, call_abs: Clock) -> ScheduledEvent<Args>
+    where F : Fn(Args) ->  Result<(), &'static str> {
+        ScheduledEvent { run_time: call_abs, func: Box::new(func) }
     }
-    
+
     pub fn call_event(&self, args: Args) -> Result<(), &'static str> {
         (self.func)(args)
     }
@@ -33,7 +47,7 @@ impl<Args> ScheduledEvent<Args> {
 }
 
 pub trait Updatable {
-    fn update(&mut self, ctx: &ggez::Context, t: Clock) -> Result<(), &'static str> {
+    fn update(&mut self, _ctx: &ggez::Context, _t: Clock) -> Result<(), &'static str> {
         Ok(())
     }
 }

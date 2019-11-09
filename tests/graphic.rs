@@ -1,10 +1,14 @@
 use ggez::*;
+use ggez::input::mouse::MouseButton;
 use std::env;
 use std::path;
+use trojan::device;
+use trojan::core::Updatable;
 
 struct State {
     frames: usize,
     text: graphics::Text,
+    mouse: device::MouseListener,
 }
 
 impl State {
@@ -13,10 +17,23 @@ impl State {
         let mut text = graphics::Text::new("Hello");
         text.set_font(font, graphics::Scale {x: 48.0, y: 48.0});
         
-        let s = State {
+        let mut s = State {
             frames: 0,
             text: text,
+            mouse: device::MouseListener::new(),
         };
+
+        s.mouse
+            .register_event_handler(
+                MouseButton::Left,
+                device::MouseButtonEvent::Clicked,
+                &move || { println!("Clicked"); 10 });
+        s.mouse
+            .register_event_handler(
+                MouseButton::Left,
+                device::MouseButtonEvent::Pressed,
+                &move || { println!("Pre"); 10 });
+
 
         Ok(s)
     }
@@ -24,6 +41,9 @@ impl State {
 
 impl ggez::event::EventHandler for State {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        self.mouse.update(ctx, 0);
+        let p = self.mouse.get_position(ctx);
+        println!("{}, {}", p.x, p.y);
         Ok(())
     }
     
@@ -44,7 +64,8 @@ impl ggez::event::EventHandler for State {
     }
 }
 
-pub fn main() {
+#[test]
+pub fn graphic_test() {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
         path.push("resources");

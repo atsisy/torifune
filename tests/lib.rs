@@ -3,7 +3,7 @@ use trojan::core::*;
 
 #[test]
 fn check_scheduled_event() {
-    let event = ScheduledEvent::new(|x: i32| {
+    let event = ScheduledEvent::new(&|x: i32| {
         println!("Event is Called {}", x);
         Ok(())
     }, 10);
