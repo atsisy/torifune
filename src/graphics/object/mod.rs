@@ -65,6 +65,12 @@ pub trait TextureObject : DrawableObject {
     /// テクスチャを描画する際の色情報を返す
     fn get_drawing_color(&self) -> ggraphics::Color;
 
+    /// テクスチャのalpha値を設定する
+    fn set_alpha(&mut self, alpha: f32);
+
+    /// テクスチャのalpha値を返す
+    fn get_alpha(&self) -> f32;
+
     /// テクスチャに対するエフェクトの始点を設定する
     fn set_transform_offset(&mut self, offset: numeric::Point2f);
 
@@ -234,6 +240,14 @@ impl<'a> TextureObject for UniTextureObject<'a> {
     
     fn get_drawing_color(&self) -> ggraphics::Color {
         self.draw_param.color
+    }
+
+    fn set_alpha(&mut self, alpha: f32) {
+        self.draw_param.color.a = alpha;
+    }
+
+    fn get_alpha(&self) -> f32 {
+        self.draw_param.color.a
     }
 
     fn set_transform_offset(&mut self, offset: numeric::Point2f) {
