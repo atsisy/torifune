@@ -1,7 +1,7 @@
 #[macro_use]
 pub mod core;
 
-pub mod object;
+pub mod graphics;
 
 pub mod device;
 

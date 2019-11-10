@@ -3,17 +3,21 @@ use ggez::input::mouse::MouseButton;
 use std::env;
 use std::path;
 use trojan::device;
+use trojan::graphics::object as tobj;
+use ggez::graphics as ggraphics;
 use trojan::core::Updatable;
+use trojan::graphics::object::DrawableObject;
 
-struct State {
+struct State<'a> {
     frames: usize,
     text: graphics::Text,
     mouse: device::MouseListener,
     key: device::KeyboardListener,
+    image: &'a tobj::UniTextureObject<'a>,
 }
 
-impl State {
-    fn new(ctx: &mut Context) -> GameResult<State> {
+impl<'a> State<'a> {
+    fn new(ctx: &mut Context, image: &'a tobj::UniTextureObject) -> GameResult<State<'a>> {
         let font = graphics::Font::new(ctx, "/azuki.ttf")?;
         let mut text = graphics::Text::new("Hello");
         text.set_font(font, graphics::Scale {x: 48.0, y: 48.0});
@@ -25,6 +29,7 @@ impl State {
             key: device::KeyboardListener::new_masked(
                 vec![device::KeyInputDevice::GenericKeyboard],
                 vec![device::VirtualKey::Action1, device::VirtualKey::Action2]),
+            image: image,
         };
 
         s.mouse
@@ -55,7 +60,7 @@ impl State {
     }
 }
 
-impl ggez::event::EventHandler for State {
+impl<'a> ggez::event::EventHandler for State<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.mouse.update(ctx, 0);
         self.key.update(ctx, 0);
@@ -69,7 +74,11 @@ impl ggez::event::EventHandler for State {
 
         let offset = self.frames as f32 / 10.0;
         let dest_point = nalgebra::Point2::new(offset, offset);
-        graphics::draw(ctx, &self.text, (dest_point,))?;
+        graphics::draw(ctx, &self.text,
+                       graphics::DrawParam::default()
+                       .dest(dest_point)
+                       .scale(trojan::numeric::Point2f {x: 0.2, y: 0.5}))?;
+        self.image.draw(ctx)?;
         graphics::present(ctx)?;
 
         self.frames += 1;
@@ -96,6 +105,15 @@ pub fn graphic_test() {
         .conf(c)
         .build()
         .unwrap();
-    let state = &mut State::new(ctx).unwrap();
+
+    let textures = vec![ggraphics::Image::new(ctx, "/ghost1.png").unwrap()];
+    let image = tobj::UniTextureObject::new(
+        &textures[0],
+        trojan::numeric::Point2f { x: 0.0, y: 0.0 },
+        trojan::numeric::Vector2f { x: 1.0, y: 1.0 },
+        0.0,
+        0
+    );
+    let state = &mut State::new(ctx, &image).unwrap();
     event::run(ctx, event_loop, state).unwrap();
 }
