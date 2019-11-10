@@ -36,12 +36,21 @@ impl<'a> State<'a> {
             .register_event_handler(
                 MouseButton::Left,
                 device::MouseButtonEvent::Clicked,
-                &move |ctx, t| { println!("Clicked"); Ok(()) });
+                &move |ctx, t| {
+                    let p = device::MouseListener::get_position(ctx);
+                    println!("p: {}, {}", p.x, p.y);
+                    Ok(())
+                });
         s.mouse
             .register_event_handler(
                 MouseButton::Left,
                 device::MouseButtonEvent::Pressed,
                 &move |ctx, t| { println!("Pre"); Ok(()) });
+        s.mouse
+            .register_event_handler(
+                MouseButton::Left,
+                device::MouseButtonEvent::Dragged,
+                &move |ctx, t| { println!("Dragging!!"); Ok(()) });
 
         s.key
             .register_event_handler(

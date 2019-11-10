@@ -7,18 +7,48 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use super::numeric;
 
+///
+/// # マウスのボタンの状態
+// マウスのボタンの状態を表す
+///
+/// MousePressed: 押されている
+/// MouseReleased: 離されている
+///
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub enum MouseButtonStatus {
     MousePressed,
     MouseReleased,
 }
 
+///
+/// # マウスイベント
+/// マウスイベント, イベントハンドラはこれらと関連付けて登録する
+///
+/// Clicked: クリックされた
+/// Pressed: 押された
+/// Dragged: ドラッグされた
+///
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub enum MouseButtonEvent {
     Clicked,
     Pressed,
+    Dragged,
 }
 
+///
+/// # マウスの状態を監視しイベントハンドラを実行する構造体
+/// イベントハンドラを登録し、呼び出すことが出来る
+///
+/// ## フィールド
+/// ### last_clicked
+/// 各ボタンが最後にクリックした座標
+///
+/// ### button_map
+/// 最後に記録した各ボタンの状態
+///
+/// ### event_handlers
+/// event_handlers[MouseButton][MouseButtonEvent]  ====>  クロージャのベクタ
+///
 pub struct MouseListener {
     last_clicked: HashMap<MouseButton, numeric::Point2f>,
     button_map: HashMap<MouseButton, MouseButtonStatus>,
@@ -27,7 +57,7 @@ pub struct MouseListener {
 
 impl MouseListener {
 
-    /// # ScheduledEvent構造体の生成メソッド 
+    /// ScheduledEvent構造体の生成メソッド 
     pub fn new() -> MouseListener {
         let mut button_map = HashMap::new();
         
@@ -39,20 +69,23 @@ impl MouseListener {
         events.insert(MouseButton::Left,
                       hash![
                           (MouseButtonEvent::Clicked, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
-                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new())
+                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
+                          (MouseButtonEvent::Dragged, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new())
                       ]);
         
 
         events.insert(MouseButton::Middle,
                       hash![
                           (MouseButtonEvent::Clicked, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
-                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new())
+                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
+                          (MouseButtonEvent::Dragged, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new())
                       ]);
 
         events.insert(MouseButton::Right,
                       hash![
                           (MouseButtonEvent::Clicked, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
-                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new())
+                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
+                          (MouseButtonEvent::Dragged, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new())
                       ]);
         
         MouseListener {
@@ -83,7 +116,7 @@ impl MouseListener {
     // 現在のマウスの座標を得るメソッド
     //
     #[inline(always)]
-    pub fn get_position(&self, ctx: &ggez::Context) -> numeric::Point2f {
+    pub fn get_position(ctx: &ggez::Context) -> numeric::Point2f {
         input::mouse::position(ctx)
     }
 
@@ -107,26 +140,35 @@ impl MouseListener {
 
     fn __flush_button_event(&mut self, ctx: &ggez::Context, t: Clock, button: MouseButton, current_state: &MouseButtonStatus) {
         // 入力内容が以前と異なる
-        if *current_state != self.button_map[&button] {
+        let event = if *current_state != self.button_map[&button] {
             
             // 操作を検知
-            let event = match *current_state {
+            match *current_state {
                 MouseButtonStatus::MousePressed => MouseButtonEvent::Pressed,
                 MouseButtonStatus::MouseReleased => {
 
                     // clickされた場合、last_clickにセット
-                    self.last_clicked.insert(button, self.get_position(ctx));
+                    self.last_clicked.insert(button, Self::get_position(ctx));
                     
                     MouseButtonEvent::Clicked
                 },
-            };
+            }
+        } else {
+            
+            // マウスのドラッグの判定
+            if current_state == &MouseButtonStatus::MousePressed {
+                MouseButtonEvent::Dragged
+            } else {
+                // どの動作の種類にも反応しない
+                return ();
+            }
+        };
 
-            // ボタン・操作の情報を利用してクロージャのリストの要素を全て実行
-            for f in &self.event_handlers[&button][&event] {
-                match f(ctx, t) {
-                    Err(x) => panic!(x),
-                    _ => ()
-                }
+        // ボタン・操作の情報を利用してクロージャのリストの要素を全て実行
+        for f in &self.event_handlers[&button][&event] {
+            match f(ctx, t) {
+                Err(x) => panic!(x),
+                _ => ()
             }
         }
     }
@@ -165,6 +207,9 @@ impl Updatable for MouseListener {
     }
 }
 
+///
+/// # キー入力を仮想化するためのシンボル
+///
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
 pub enum VirtualKey {
     Left = 0,
@@ -226,6 +271,14 @@ impl VirtualKey {
     }
 }
 
+///
+/// # キーの状態
+// キーの状態を表す
+///
+/// Pressed: 押されている
+/// Released: 離されている
+/// Unknown: 不明
+///
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum KeyStatus {
     Pressed,
@@ -256,16 +309,33 @@ impl KeyStatus {
     
 }
 
+///
+/// # キーイベント
+// キーイベント, イベントハンドラはこれらと関連付けて登録する
+///
+/// Typed: タイプされた（押してから離された）
+/// FirstPressed: 初めて押された（離された状態から押された状態になった）
+/// KeepPressed: 押され続けている（押された状態から押された状態になった）
+/// KeepReleased: 離され続けている（離された状態から離された状態になった）
+/// Unknown: 不明
+///
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub enum KeyboardEvent {
     Typed,
     FirstPressed,
     KeepPressed,
     KeepReleased,
-    NumberOfKeyboardEvent,
     Unknown,
 }
 
+
+///
+/// # 入力デバイス
+// 入力デバイスを表す
+///
+/// GenericKeyboard: 一般的なキーボード
+/// PS3Controller: PS3 コントローラー
+///
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub enum KeyInputDevice {
     GenericKeyboard,
