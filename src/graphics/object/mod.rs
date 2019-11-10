@@ -170,14 +170,12 @@ impl<'a> UniTextureObject<'a> {
 }
 
 impl<'a> DrawableObject for UniTextureObject<'a> {
-    //
-    // Ok(())する必要無いのでは？ 普通にdrawの返り値を返せば良い説
-    //
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         if self.drwob_essential.visible {
-            ggraphics::draw(ctx, self.texture, self.draw_param)?;
+            ggraphics::draw(ctx, self.texture, self.draw_param)
+        } else {
+            Ok(())
         }
-        Ok(())
     }
 
     fn hide(&mut self) {

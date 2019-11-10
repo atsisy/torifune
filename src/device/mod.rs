@@ -22,7 +22,7 @@ pub enum MouseButtonEvent {
 pub struct MouseListener {
     last_clicked: HashMap<MouseButton, numeric::Point2f>,
     button_map: HashMap<MouseButton, MouseButtonStatus>,
-    event_handlers: HashMap<MouseButton, HashMap<MouseButtonEvent, Vec<Box<dyn Fn() -> i32>>>>,
+    event_handlers: HashMap<MouseButton, HashMap<MouseButtonEvent, Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>>>,
 }
 
 impl MouseListener {
@@ -38,21 +38,21 @@ impl MouseListener {
         let mut events = HashMap::new();
         events.insert(MouseButton::Left,
                       hash![
-                          (MouseButtonEvent::Clicked, Vec::<Box<dyn Fn() -> i32>>::new()),
-                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn() -> i32>>::new())
+                          (MouseButtonEvent::Clicked, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
+                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new())
                       ]);
         
 
         events.insert(MouseButton::Middle,
                       hash![
-                          (MouseButtonEvent::Clicked, Vec::<Box<dyn Fn() -> i32>>::new()),
-                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn() -> i32>>::new())
+                          (MouseButtonEvent::Clicked, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
+                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new())
                       ]);
 
         events.insert(MouseButton::Right,
                       hash![
-                          (MouseButtonEvent::Clicked, Vec::<Box<dyn Fn() -> i32>>::new()),
-                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn() -> i32>>::new())
+                          (MouseButtonEvent::Clicked, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
+                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new())
                       ]);
         
         MouseListener {
@@ -70,7 +70,7 @@ impl MouseListener {
     /// マウスのイベントハンドラを登録するためのメソッド
     ///
     pub fn register_event_handler<F>(&mut self, button: MouseButton, event: MouseButtonEvent, f: &'static F)
-    where F: Fn() -> i32 {
+    where F: Fn(&ggez::Context, Clock) -> Result<(), String> {
         self.event_handlers
             .get_mut(&button)
             .unwrap()
@@ -105,7 +105,7 @@ impl MouseListener {
         }
     }
 
-    fn __flush_button_event(&mut self, ctx: &ggez::Context, button: MouseButton, current_state: &MouseButtonStatus) {
+    fn __flush_button_event(&mut self, ctx: &ggez::Context, t: Clock, button: MouseButton, current_state: &MouseButtonStatus) {
         // 入力内容が以前と異なる
         if *current_state != self.button_map[&button] {
             
@@ -123,19 +123,23 @@ impl MouseListener {
 
             // ボタン・操作の情報を利用してクロージャのリストの要素を全て実行
             for f in &self.event_handlers[&button][&event] {
-                f();
+                match f(ctx, t) {
+                    Err(x) => panic!(x),
+                    _ => ()
+                }
             }
         }
     }
 
     fn flush_button_event(&mut self,
                           ctx: &ggez::Context,
+                          t: Clock,
                           l_state: &MouseButtonStatus,
                           m_state: &MouseButtonStatus,
                           r_state: &MouseButtonStatus) {
-        self.__flush_button_event(ctx, MouseButton::Left, l_state);
-        self.__flush_button_event(ctx, MouseButton::Middle, m_state);
-        self.__flush_button_event(ctx, MouseButton::Right, r_state);
+        self.__flush_button_event(ctx, t, MouseButton::Left, l_state);
+        self.__flush_button_event(ctx, t, MouseButton::Middle, m_state);
+        self.__flush_button_event(ctx, t, MouseButton::Right, r_state);
     }
 }
 
@@ -151,7 +155,7 @@ impl Updatable for MouseListener {
         //
         // 入力のイベントハンドラを実行する
         //
-        self.flush_button_event(ctx, &l_status, &m_status, &r_status);
+        self.flush_button_event(ctx, t, &l_status, &m_status, &r_status);
 
         self.button_map.insert(MouseButton::Left, l_status);
         self.button_map.insert(MouseButton::Middle, m_status);
@@ -336,7 +340,7 @@ pub struct KeyboardListener {
     devices: Vec<KeyInputDevice>,
     listening: Vec<VirtualKey>,
     key_map: Vec<KeyStatus>,
-    event_handlers: Vec<Vec<Vec<Box<dyn Fn() -> i32>>>>,
+    event_handlers: Vec<Vec<Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>>>,
 }
 
 impl KeyboardListener {
@@ -344,12 +348,12 @@ impl KeyboardListener {
     /// # ScheduledEvent構造体の生成メソッド 
     pub fn new(devices: Vec<KeyInputDevice>) -> KeyboardListener {
         // key_mapは全てReleasedで初期化
-        let mut key_map = vec![KeyStatus::Released; (VirtualKey::Unknown as usize) + 1];
+        let key_map = vec![KeyStatus::Released; (VirtualKey::Unknown as usize) + 1];
         let mut listening = Vec::new();
 
-        let mut events: Vec<Vec<Vec<Box<dyn Fn() -> i32>>>> = Vec::new();
+        let mut events: Vec<Vec<Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>>> = Vec::new();
         for vkey_raw in 0..(VirtualKey::Unknown as i32 + 1) {
-            let mut tmp: Vec<Vec<Box<dyn Fn() -> i32>>> = Vec::new();
+            let mut tmp: Vec<Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>> = Vec::new();
             for _ in 0..(KeyboardEvent::Unknown as i32 + 1) {
                 tmp.push(Vec::new());
             }
@@ -374,9 +378,9 @@ impl KeyboardListener {
         // key_mapは全てReleasedで初期化
         let key_map = vec![KeyStatus::Released; (VirtualKey::Unknown as usize) + 1];
 
-        let mut events: Vec<Vec<Vec<Box<dyn Fn() -> i32>>>> = Vec::new();
+        let mut events: Vec<Vec<Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>>> = Vec::new();
         for _ in 0..(VirtualKey::Unknown as i32 + 1) {
-            let mut tmp: Vec<Vec<Box<dyn Fn() -> i32>>> = Vec::new();
+            let mut tmp: Vec<Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>> = Vec::new();
             for _ in 0..(KeyboardEvent::Unknown as i32 + 1) {
                 tmp.push(Vec::new());
             }
@@ -395,7 +399,7 @@ impl KeyboardListener {
     /// キーボードのイベントハンドラを登録するためのメソッド
     ///
     pub fn register_event_handler<F>(&mut self, key: VirtualKey, event: KeyboardEvent, f: &'static F)
-    where F: Fn() -> i32 {
+    where F: Fn(&ggez::Context, Clock) -> Result<(), String> {
         self.event_handlers
             .get_mut(key as usize)
             .unwrap()
@@ -427,7 +431,10 @@ impl KeyboardListener {
             .unwrap()
             .get(event as usize)
             .unwrap() {
-            f();
+            match f(ctx, t) {
+                Err(x) => panic!(x),
+                _ => ()
+            }
         }
         
     }
