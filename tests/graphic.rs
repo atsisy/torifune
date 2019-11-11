@@ -7,6 +7,7 @@ use trojan::graphics::object as tobj;
 use ggez::graphics as ggraphics;
 use trojan::core::Updatable;
 use trojan::graphics::object::*;
+use trojan::core::Clock;
 
 struct State<'a> {
     frames: usize,
@@ -14,6 +15,21 @@ struct State<'a> {
     mouse: device::MouseListener,
     key: device::KeyboardListener,
     image: tobj::UniTextureObject<'a>,
+}
+
+fn sample_mouse_closure(msg: &'static str) -> Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>> {
+    Box::new(move |ctx: &Context, _t| {
+        let p = device::MouseListener::get_position(ctx);
+        println!("{}: {}, {}", msg, p.x, p.y);
+        Ok(())
+    })
+}
+
+fn sample_keyboard_closure(msg: &'static str) -> Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>> {
+    Box::new(move |_ctx: &Context, _t| {
+        println!("key event ====> {}", msg);
+        Ok(())
+    })
 }
 
 impl<'a> State<'a> {
@@ -32,38 +48,47 @@ impl<'a> State<'a> {
             image: image,
         };
 
+        /*
+        * indirect closure inserting
+        */
+        let p = sample_mouse_closure("sample_closure!!");
         s.mouse
             .register_event_handler(
                 MouseButton::Left,
                 device::MouseButtonEvent::Clicked,
-                &move |ctx, t| {
-                    let p = device::MouseListener::get_position(ctx);
-                    println!("p: {}, {}", p.x, p.y);
-                    Ok(())
-                });
+                p
+            );
+
+        /*
+         * direct closure inserting with closure returing func
+         */
         s.mouse
             .register_event_handler(
                 MouseButton::Left,
                 device::MouseButtonEvent::Pressed,
-                &move |ctx, t| { println!("Pre"); Ok(()) });
+                sample_mouse_closure("Left button is Pressed!!"));
+
+        /*
+         * direct closure inserting with lambda
+         */
         s.mouse
             .register_event_handler(
                 MouseButton::Left,
                 device::MouseButtonEvent::Dragged,
-                &move |ctx, t| { println!("Dragging!!"); Ok(()) });
+                Box::new(move |_ctx: &Context, _t| { println!("Dragging!!"); Ok(()) }));
 
         s.key
             .register_event_handler(
                 device::VirtualKey::Action1,
                 device::KeyboardEvent::FirstPressed,
-                &move |ctx, t| { println!("Pre"); Ok(()) });
+                sample_keyboard_closure("Pressed!!")
+            );
 
         s.key
             .register_event_handler(
                 device::VirtualKey::Action2,
                 device::KeyboardEvent::FirstPressed,
-                &move |ctx, t| { println!("Pre"); Ok(()) });
-
+                Box::new(move |_ctx: &Context, _t| { println!("Pre"); Ok(()) }));
 
         Ok(s)
     }

@@ -102,14 +102,14 @@ impl MouseListener {
     ///
     /// マウスのイベントハンドラを登録するためのメソッド
     ///
-    pub fn register_event_handler<F>(&mut self, button: MouseButton, event: MouseButtonEvent, f: &'static F)
-    where F: Fn(&ggez::Context, Clock) -> Result<(), String> {
+    pub fn register_event_handler(&mut self, button: MouseButton, event: MouseButtonEvent,
+                                      f: Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>) {
         self.event_handlers
             .get_mut(&button)
             .unwrap()
             .get_mut(&event)
             .unwrap()
-            .push(Box::new(f));
+            .push(f);
     }
 
     //
@@ -468,14 +468,14 @@ impl KeyboardListener {
     ///
     /// キーボードのイベントハンドラを登録するためのメソッド
     ///
-    pub fn register_event_handler<F>(&mut self, key: VirtualKey, event: KeyboardEvent, f: &'static F)
-    where F: Fn(&ggez::Context, Clock) -> Result<(), String> {
+    pub fn register_event_handler(&mut self, key: VirtualKey, event: KeyboardEvent,
+                                  f: Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>) {
         self.event_handlers
             .get_mut(key as usize)
             .unwrap()
             .get_mut(event as usize)
             .unwrap()
-            .push(Box::new(f));
+            .push(f);
     }
 
     ///
