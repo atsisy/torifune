@@ -96,7 +96,7 @@ struct DrawableObjectEssential {
 }
 
 impl DrawableObjectEssential {
-
+    // DrawableObjectEssentialの生成関数
     fn new(visible: bool, depth: i8) -> DrawableObjectEssential {
         DrawableObjectEssential {
             visible: visible,
@@ -106,7 +106,12 @@ impl DrawableObjectEssential {
     
 }
 
+///
+/// # 生成された時刻を記憶していることを保証させるトレイト
+///
 pub trait HasBirthTime {
+
+    // 生成された時刻を返す
     fn get_birth_time(&self) -> Clock;
 }
 
@@ -127,12 +132,15 @@ pub trait MovableObject : DrawableObject + HasBirthTime {
 ///
 /// # エフェクトに対応していることを保証させるトレイト
 ///
-///
 pub trait Effectable {
     // エフェクト処理を行う
     fn effect(&mut self, ctx: &ggez::Context, t: Clock);
 }
 
+///
+/// # クロージャによって実装されるエフェクトに対応していることを保証させるトレイト
+/// Effectableを実装している必要がある
+///
 pub trait HasGenericEffect : Effectable {
     
     // 新しくエフェクトを追加するメソッド
@@ -144,6 +152,16 @@ pub trait HasGenericEffect : Effectable {
 /// # Trait MovableObjectを実装するために必要なフィールド群
 /// Trait MovableObjectを実装する場合に便利な構造体
 ///
+/// ## フィールド
+/// ### move_func
+/// 従う関数をクロージャで表現したもの。MovableObjectを実装する場合は、これに従うように実装するべき
+///
+/// ### mf_set_time
+/// 最後にmove_funcが変更された時の時刻
+///
+/// ### init_position
+/// 生成された時の初期位置
+///
 pub struct MovableEssential {
     move_func: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
     mf_set_time: Clock,
@@ -151,6 +169,7 @@ pub struct MovableEssential {
 }
 
 impl MovableEssential {
+    // MovableEssentialを生成する関数
     fn new(f: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
            t: Clock, init_pos: numeric::Point2f) -> MovableEssential {
         MovableEssential {
@@ -194,7 +213,13 @@ impl HasGenericEffectEssential {
 /// 主に、Trait TextureObjectをを実装するために持つ構造体
 /// 描画位置, スケールなどの情報を保持している
 ///
-pub struct DrawableUniTexture<'a> {
+/// ### mv_essential
+/// MovableObjectを実装するために必要なフィールド
+///
+/// ### birth_time
+/// このオブジェクトが生成された時刻
+///
+pub struct MovavleUniTexture<'a> {
     drwob_essential: DrawableObjectEssential,
     texture: &'a ggraphics::Image,
     draw_param: ggraphics::DrawParam,
@@ -202,11 +227,11 @@ pub struct DrawableUniTexture<'a> {
     birth_time: Clock,
 }
 
-impl<'a> DrawableUniTexture<'a> {
+impl<'a> MovavleUniTexture<'a> {
     
     ///
     /// # 関連関数 new
-    /// DrawableUniTextureを生成する
+    /// MovavleUniTextureを生成する
     ///
     /// ## 引数
     /// ### texture
@@ -231,14 +256,14 @@ impl<'a> DrawableUniTexture<'a> {
                drawing_depth: i8,
                mf: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
                now: Clock
-    ) -> DrawableUniTexture {
+    ) -> MovavleUniTexture {
         let mut param = ggraphics::DrawParam::new();
         param.dest = pos;
         param.scale = scale;
         param.rotation = rotation;
 
         // visibleはデフォルトでtrueに設定
-        DrawableUniTexture {
+        MovavleUniTexture {
             drwob_essential: DrawableObjectEssential::new(true, drawing_depth),
             texture: texture,
             draw_param: param,
@@ -248,7 +273,7 @@ impl<'a> DrawableUniTexture<'a> {
     }
 }
 
-impl<'a> DrawableObject for DrawableUniTexture<'a> {
+impl<'a> DrawableObject for MovavleUniTexture<'a> {
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         if self.drwob_essential.visible {
             ggraphics::draw(ctx, self.texture, self.draw_param)
@@ -257,36 +282,43 @@ impl<'a> DrawableObject for DrawableUniTexture<'a> {
         }
     }
 
+    #[inline(always)]
     fn hide(&mut self) {
         self.drwob_essential.visible = false;
     }
 
+    #[inline(always)]
     fn appear(&mut self) {
         self.drwob_essential.visible = true;
     }
 
+    #[inline(always)]
     fn is_visible(&self) -> bool {
         self.drwob_essential.visible
     }
 
+    #[inline(always)]
     fn set_drawing_depth(&mut self, depth: i8) {
         self.drwob_essential.drawing_depth = depth;
     }
 
+    #[inline(always)]
     fn get_drawing_depth(&self) -> i8 {
         self.drwob_essential.drawing_depth
     }
 
+    #[inline(always)]
     fn set_position(&mut self, pos: numeric::Point2f) {
         self.draw_param.dest = pos;
     }
 
+    #[inline(always)]
     fn get_position(&self) -> numeric::Point2f {
         self.draw_param.dest
     }
 }
 
-impl<'a> TextureObject for DrawableUniTexture<'a> {
+impl<'a> TextureObject for MovavleUniTexture<'a> {
     #[inline(always)]
     fn set_scale(&mut self, scale: numeric::Vector2f) {
         self.draw_param.scale = scale;
@@ -349,13 +381,13 @@ impl<'a> TextureObject for DrawableUniTexture<'a> {
     
 }
 
-impl<'a> HasBirthTime for DrawableUniTexture<'a> {
+impl<'a> HasBirthTime for MovavleUniTexture<'a> {
     fn get_birth_time(&self) -> Clock {
         self.birth_time
     }
 }
 
-impl<'a> MovableObject for DrawableUniTexture<'a> {
+impl<'a> MovableObject for MovavleUniTexture<'a> {
 
     fn move_with_func(&mut self, t: Clock) {
         // クロージャにはselfと経過時間を与える
@@ -371,8 +403,19 @@ impl<'a> MovableObject for DrawableUniTexture<'a> {
     }
 }
 
+///
+/// # 一つのテクスチャを扱う描画可能オブジェクト
+/// 一つのテクスチャを表示する際に利用できる
+///
+/// ## フィールド
+/// ### drawable_texture
+/// MovableObjectトレイトを実装したもの。これに対してエフェクトを掛ける。
+///
+/// ### geffect_essential
+/// HasGenericEffectEssentialを実装するために必要なフィールド
+///
 pub struct UniTextureObject<'a> {
-    drawable_texture: DrawableUniTexture<'a>,
+    drawable_texture: MovavleUniTexture<'a>,
     geffect_essential: HasGenericEffectEssential,
 }
 
@@ -386,7 +429,7 @@ impl<'a> UniTextureObject<'a> {
            now: Clock,
            effects: Vec<Box<dyn Fn(&mut dyn MovableObject, &ggez::Context, Clock) -> ()>>) -> UniTextureObject {
         UniTextureObject {
-            drawable_texture: DrawableUniTexture::new(texture, pos, scale, rotation, drawing_depth, mf, now),
+            drawable_texture: MovavleUniTexture::new(texture, pos, scale, rotation, drawing_depth, mf, now),
             geffect_essential: HasGenericEffectEssential::new(effects)
         }
     }
