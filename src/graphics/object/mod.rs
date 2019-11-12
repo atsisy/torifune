@@ -118,7 +118,7 @@ pub trait HasBirthTime {
 ///
 /// # 任意の関数に従って座標を動かすことができることを保証するトレイト
 ///
-pub trait MovableObject : DrawableObject + HasBirthTime {    
+pub trait MovableObject : DrawableObject + HasBirthTime {
 
     // 任意の関数に従って、座標を動かす
     fn move_with_func(&mut self, t: Clock);
@@ -219,7 +219,7 @@ impl HasGenericEffectEssential {
 /// ### birth_time
 /// このオブジェクトが生成された時刻
 ///
-pub struct MovavleUniTexture<'a> {
+pub struct MovableUniTexture<'a> {
     drwob_essential: DrawableObjectEssential,
     texture: &'a ggraphics::Image,
     draw_param: ggraphics::DrawParam,
@@ -227,11 +227,11 @@ pub struct MovavleUniTexture<'a> {
     birth_time: Clock,
 }
 
-impl<'a> MovavleUniTexture<'a> {
+impl<'a> MovableUniTexture<'a> {
     
     ///
     /// # 関連関数 new
-    /// MovavleUniTextureを生成する
+    /// MovableUniTextureを生成する
     ///
     /// ## 引数
     /// ### texture
@@ -256,14 +256,14 @@ impl<'a> MovavleUniTexture<'a> {
                drawing_depth: i8,
                mf: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
                now: Clock
-    ) -> MovavleUniTexture {
+    ) -> MovableUniTexture {
         let mut param = ggraphics::DrawParam::new();
         param.dest = pos;
         param.scale = scale;
         param.rotation = rotation;
 
         // visibleはデフォルトでtrueに設定
-        MovavleUniTexture {
+        MovableUniTexture {
             drwob_essential: DrawableObjectEssential::new(true, drawing_depth),
             texture: texture,
             draw_param: param,
@@ -273,7 +273,7 @@ impl<'a> MovavleUniTexture<'a> {
     }
 }
 
-impl<'a> DrawableObject for MovavleUniTexture<'a> {
+impl<'a> DrawableObject for MovableUniTexture<'a> {
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         if self.drwob_essential.visible {
             ggraphics::draw(ctx, self.texture, self.draw_param)
@@ -318,7 +318,7 @@ impl<'a> DrawableObject for MovavleUniTexture<'a> {
     }
 }
 
-impl<'a> TextureObject for MovavleUniTexture<'a> {
+impl<'a> TextureObject for MovableUniTexture<'a> {
     #[inline(always)]
     fn set_scale(&mut self, scale: numeric::Vector2f) {
         self.draw_param.scale = scale;
@@ -381,13 +381,13 @@ impl<'a> TextureObject for MovavleUniTexture<'a> {
     
 }
 
-impl<'a> HasBirthTime for MovavleUniTexture<'a> {
+impl<'a> HasBirthTime for MovableUniTexture<'a> {
     fn get_birth_time(&self) -> Clock {
         self.birth_time
     }
 }
 
-impl<'a> MovableObject for MovavleUniTexture<'a> {
+impl<'a> MovableObject for MovableUniTexture<'a> {
 
     fn move_with_func(&mut self, t: Clock) {
         // クロージャにはselfと経過時間を与える
@@ -403,169 +403,329 @@ impl<'a> MovableObject for MovavleUniTexture<'a> {
     }
 }
 
-///
-/// # 一つのテクスチャを扱う描画可能オブジェクト
-/// 一つのテクスチャを表示する際に利用できる
-///
-/// ## フィールド
-/// ### drawable_texture
-/// MovableObjectトレイトを実装したもの。これに対してエフェクトを掛ける。
-///
-/// ### geffect_essential
-/// HasGenericEffectEssentialを実装するために必要なフィールド
-///
-pub struct UniTextureObject<'a> {
-    drawable_texture: MovavleUniTexture<'a>,
-    geffect_essential: HasGenericEffectEssential,
+pub struct MovableText {
+    drwob_essential: DrawableObjectEssential,
+    text: graphics::Text,
+    draw_param: ggraphics::DrawParam,
+    mv_essential: MovableEssential,
+    birth_time: Clock,
 }
 
-impl<'a> UniTextureObject<'a> {
-    pub fn new(texture: &ggraphics::Image,
+impl MovableText {
+    pub fn new(text: String,
            pos: numeric::Point2f,
            scale: numeric::Vector2f,
            rotation: f32,
            drawing_depth: i8,
            mf: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
-           now: Clock,
-           effects: Vec<Box<dyn Fn(&mut dyn MovableObject, &ggez::Context, Clock) -> ()>>) -> UniTextureObject {
-        UniTextureObject {
-            drawable_texture: MovavleUniTexture::new(texture, pos, scale, rotation, drawing_depth, mf, now),
-            geffect_essential: HasGenericEffectEssential::new(effects)
+           now: Clock) -> MovableText {
+
+        let mut param = ggraphics::DrawParam::new();
+        param.dest = pos;
+        param.scale = scale;
+        param.rotation = rotation;
+        
+        MovableText {
+            drwob_essential: DrawableObjectEssential::new(true, drawing_depth),
+            text: ggraphics::Text::new(text),
+            draw_param: param,
+            mv_essential: MovableEssential::new(mf, now, pos),
+            birth_time: now
         }
     }
 }
 
-
-impl<'a> DrawableObject for UniTextureObject<'a> {
+impl DrawableObject for MovableText {
     #[inline(always)]
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
-        self.drawable_texture.draw(ctx)
+        if self.drwob_essential.visible {
+            ggraphics::draw(ctx, &self.text, self.draw_param)
+        } else {
+            Ok(())
+        }
     }
 
     #[inline(always)]
     fn hide(&mut self) {
-        self.drawable_texture.hide()
+        self.drwob_essential.visible = false;
     }
 
     #[inline(always)]
     fn appear(&mut self) {
-        self.drawable_texture.appear()
+        self.drwob_essential.visible = true;
     }
 
     #[inline(always)]
     fn is_visible(&self) -> bool {
-        self.drawable_texture.is_visible()
+        self.drwob_essential.visible
     }
 
     #[inline(always)]
     fn set_drawing_depth(&mut self, depth: i8) {
-        self.drawable_texture.set_drawing_depth(depth)
+        self.drwob_essential.drawing_depth = depth;
     }
 
     #[inline(always)]
     fn get_drawing_depth(&self) -> i8 {
-        self.drawable_texture.get_drawing_depth()
+        self.drwob_essential.drawing_depth
     }
 
     #[inline(always)]
     fn set_position(&mut self, pos: numeric::Point2f) {
-        self.drawable_texture.set_position(pos)
+        self.draw_param.dest = pos;
     }
 
     #[inline(always)]
     fn get_position(&self) -> numeric::Point2f {
-        self.drawable_texture.get_position()
+        self.draw_param.dest
     }
 }
 
-impl<'a> TextureObject for UniTextureObject<'a> {
+impl TextureObject for MovableText {
     #[inline(always)]
     fn set_scale(&mut self, scale: numeric::Vector2f) {
-        self.drawable_texture.set_scale(scale)
+        self.draw_param.scale = scale;
     }
 
     #[inline(always)]
     fn get_scale(&self) -> numeric::Vector2f {
-        self.drawable_texture.get_scale()
+        self.draw_param.scale
     }
 
     #[inline(always)]
     fn set_rotation(&mut self, rad: f32) {
-        self.drawable_texture.set_rotation(rad)
+        self.draw_param.rotation = rad;
     }
 
     #[inline(always)]
     fn get_rotation(&self) -> f32 {
-        self.drawable_texture.get_rotation()
+        self.draw_param.rotation
     }
 
     #[inline(always)]
     fn set_crop(&mut self, crop: ggraphics::Rect) {
-        self.drawable_texture.set_crop(crop)
+        self.draw_param.src = crop;
     }
 
     #[inline(always)]
     fn get_crop(&self) -> ggraphics::Rect {
-        self.drawable_texture.get_crop()
+        self.draw_param.src
     }
 
     #[inline(always)]
     fn set_drawing_color(&mut self, color: ggraphics::Color) {
-        self.drawable_texture.set_drawing_color(color)
+        self.draw_param.color = color;
     }
 
     #[inline(always)]
     fn get_drawing_color(&self) -> ggraphics::Color {
-        self.drawable_texture.get_drawing_color()
+        self.draw_param.color
     }
 
     #[inline(always)]
     fn set_alpha(&mut self, alpha: f32) {
-        self.drawable_texture.set_alpha(alpha)
+        self.draw_param.color.a = alpha;
     }
 
     #[inline(always)]
     fn get_alpha(&self) -> f32 {
-        self.drawable_texture.get_alpha()
+        self.draw_param.color.a
     }
 
     #[inline(always)]
     fn set_transform_offset(&mut self, offset: numeric::Point2f) {
-        self.drawable_texture.set_transform_offset(offset)
+        self.draw_param.offset = offset;
     }
-    
+
     #[inline(always)]
     fn get_transform_offset(&self) -> numeric::Point2f {
-        self.drawable_texture.get_transform_offset()
+        self.draw_param.offset
     }
-    
 }
 
-impl<'a> HasBirthTime for UniTextureObject<'a> {
-    #[inline(always)]
+impl HasBirthTime for MovableText {
     fn get_birth_time(&self) -> Clock {
-        self.drawable_texture.get_birth_time()
+        self.birth_time
     }
 }
 
-impl<'a> MovableObject for UniTextureObject<'a> {
+impl MovableObject for MovableText {
 
-    #[inline(always)]
     fn move_with_func(&mut self, t: Clock) {
-        
         // クロージャにはselfと経過時間を与える
-        self.drawable_texture.move_with_func(t)
+        self.set_position((self.mv_essential.move_func)(self, t - self.birth_time));
     }
 
     // 従う関数を変更する
     fn override_move_func(&mut self,
                           move_fn: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
                           now: Clock) {
-        self.drawable_texture.override_move_func(move_fn, now)
+        self.mv_essential.move_func = move_fn;
+        self.mv_essential.mf_set_time = now;
     }
 }
 
-impl<'a> HasGenericEffect for UniTextureObject<'a> {
+
+///
+/// # エフェクトを掛けるためのジェネリック構造体
+/// この構造体で包まれたオブジェクトはエフェクトの効果を受ける
+///
+/// ## フィールド
+/// ### movable_object
+/// MovableObject, TextureObjectトレイトを実装していなければならない。
+/// エフェクトはこのオブジェクトに対して行われる。
+///
+/// ### geffect_essential
+/// HasGenericEffectEssentialを実装するために必要なフィールド
+/// エフェクトのクロージャが含まれる
+///
+pub struct GenericEffectableObject<T: MovableObject + TextureObject> {
+    movable_object: T,
+    geffect_essential: HasGenericEffectEssential,
+}
+
+impl<T: MovableObject + TextureObject> GenericEffectableObject<T> {
+    // 生成関数
+    pub fn new(movable_object: T,
+               effects: Vec<Box<dyn Fn(&mut dyn MovableObject, &ggez::Context, Clock) -> ()>>) -> GenericEffectableObject<T> {
+        GenericEffectableObject::<T> {
+            movable_object: movable_object,
+            geffect_essential: HasGenericEffectEssential::new(effects)
+        }
+    }
+}
+
+impl<T: MovableObject + TextureObject> DrawableObject for GenericEffectableObject<T> {
+    #[inline(always)]
+    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+        self.movable_object.draw(ctx)
+    }
+
+    #[inline(always)]
+    fn hide(&mut self) {
+        self.movable_object.hide()
+    }
+
+    #[inline(always)]
+    fn appear(&mut self) {
+        self.movable_object.appear()
+    }
+
+    #[inline(always)]
+    fn is_visible(&self) -> bool {
+        self.movable_object.is_visible()
+    }
+
+    #[inline(always)]
+    fn set_drawing_depth(&mut self, depth: i8) {
+        self.movable_object.set_drawing_depth(depth)
+    }
+
+    #[inline(always)]
+    fn get_drawing_depth(&self) -> i8 {
+        self.movable_object.get_drawing_depth()
+    }
+
+    #[inline(always)]
+    fn set_position(&mut self, pos: numeric::Point2f) {
+        self.movable_object.set_position(pos)
+    }
+
+    #[inline(always)]
+    fn get_position(&self) -> numeric::Point2f {
+        self.movable_object.get_position()
+    }
+}
+
+impl<T: MovableObject + TextureObject> TextureObject for GenericEffectableObject<T> {
+    #[inline(always)]
+    fn set_scale(&mut self, scale: numeric::Vector2f) {
+        self.movable_object.set_scale(scale)
+    }
+
+    #[inline(always)]
+    fn get_scale(&self) -> numeric::Vector2f {
+        self.movable_object.get_scale()
+    }
+
+    #[inline(always)]
+    fn set_rotation(&mut self, rad: f32) {
+        self.movable_object.set_rotation(rad)
+    }
+
+    #[inline(always)]
+    fn get_rotation(&self) -> f32 {
+        self.movable_object.get_rotation()
+    }
+
+    #[inline(always)]
+    fn set_crop(&mut self, crop: ggraphics::Rect) {
+        self.movable_object.set_crop(crop)
+    }
+
+    #[inline(always)]
+    fn get_crop(&self) -> ggraphics::Rect {
+        self.movable_object.get_crop()
+    }
+
+    #[inline(always)]
+    fn set_drawing_color(&mut self, color: ggraphics::Color) {
+        self.movable_object.set_drawing_color(color)
+    }
+
+    #[inline(always)]
+    fn get_drawing_color(&self) -> ggraphics::Color {
+        self.movable_object.get_drawing_color()
+    }
+
+    #[inline(always)]
+    fn set_alpha(&mut self, alpha: f32) {
+        self.movable_object.set_alpha(alpha)
+    }
+
+    #[inline(always)]
+    fn get_alpha(&self) -> f32 {
+        self.movable_object.get_alpha()
+    }
+
+    #[inline(always)]
+    fn set_transform_offset(&mut self, offset: numeric::Point2f) {
+        self.movable_object.set_transform_offset(offset)
+    }
+    
+    #[inline(always)]
+    fn get_transform_offset(&self) -> numeric::Point2f {
+        self.movable_object.get_transform_offset()
+    }
+    
+}
+
+impl<T: MovableObject + TextureObject> HasBirthTime for GenericEffectableObject<T> {
+    #[inline(always)]
+    fn get_birth_time(&self) -> Clock {
+        self.movable_object.get_birth_time()
+    }
+}
+
+impl<T: MovableObject + TextureObject> MovableObject for GenericEffectableObject<T> {
+
+    #[inline(always)]
+    fn move_with_func(&mut self, t: Clock) {
+        
+        // クロージャにはselfと経過時間を与える
+        self.movable_object.move_with_func(t)
+    }
+
+    // 従う関数を変更する
+    fn override_move_func(&mut self,
+                          move_fn: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+                          now: Clock) {
+        self.movable_object.override_move_func(move_fn, now)
+    }
+}
+
+
+impl<T: MovableObject + TextureObject> HasGenericEffect for GenericEffectableObject<T> {
     // 新しくエフェクトを追加するメソッド
     fn add_effect(&mut self,
                   effect: Vec<Box<dyn Fn(&mut dyn MovableObject, &ggez::Context, Clock) -> ()>>) {
@@ -573,11 +733,14 @@ impl<'a> HasGenericEffect for UniTextureObject<'a> {
     }
 }
 
-impl<'a> Effectable for UniTextureObject<'a> {
+impl<T: MovableObject + TextureObject> Effectable for GenericEffectableObject<T> {
     // 新しくエフェクトを追加するメソッド
     fn effect(&mut self, ctx: &ggez::Context, t: Clock) {
         for f in &self.geffect_essential.effects_list {
-            (f)(&mut self.drawable_texture, ctx, t);
+            (f)(&mut self.movable_object, ctx, t);
         }
     }
 }
+
+pub type SimpleObject<'a> = GenericEffectableObject<MovableUniTexture<'a>>;
+pub type SimpleText = GenericEffectableObject<MovableText>;

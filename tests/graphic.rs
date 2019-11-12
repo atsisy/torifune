@@ -11,10 +11,10 @@ use trojan::core::Clock;
 
 struct State<'a> {
     frames: usize,
-    text: graphics::Text,
+    text: SimpleText,
     mouse: device::MouseListener,
     key: device::KeyboardListener,
-    image: tobj::UniTextureObject<'a>,
+    image: tobj::SimpleObject<'a>,
 }
 
 fn sample_mouse_closure(msg: &'static str) -> Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>> {
@@ -33,10 +33,25 @@ fn sample_keyboard_closure(msg: &'static str) -> Box<dyn Fn(&ggez::Context, Cloc
 }
 
 impl<'a> State<'a> {
-    fn new(ctx: &mut Context, image: tobj::UniTextureObject<'a>) -> GameResult<State<'a>> {
+    fn new(ctx: &mut Context, image: tobj::SimpleObject<'a>) -> GameResult<State<'a>> {
         let font = graphics::Font::new(ctx, "/azuki.ttf")?;
-        let mut text = graphics::Text::new("Hello");
-        text.set_font(font, graphics::Scale {x: 48.0, y: 48.0});
+
+        
+//        let mut raw_text = graphics::Text::new("Hello");
+//        raw_text.set_font(font, graphics::Scale {x: 48.0, y: 48.0});
+
+        let text = tobj::SimpleText::new(
+            MovableText::new(
+                "Hello".to_owned(),
+                trojan::numeric::Point2f { x: 0.0, y: 0.0 },
+                trojan::numeric::Vector2f { x: 1.0, y: 1.0 },
+                0.0,
+                0,
+                Box::new(move |p: & dyn MovableObject, t: Clock| {
+                    trojan::numeric::Point2f{x: p.get_position().x + 1.0, y: p.get_position().y}
+                }),
+                0),
+            vec![]);
         
         let mut s = State {
             frames: 0,
@@ -45,7 +60,7 @@ impl<'a> State<'a> {
             key: device::KeyboardListener::new_masked(
                 vec![device::KeyInputDevice::GenericKeyboard],
                 vec![device::VirtualKey::Action1, device::VirtualKey::Action2]),
-            image: image,
+            image: image
         };
 
         /*
@@ -101,6 +116,7 @@ impl<'a> ggez::event::EventHandler for State<'a> {
         let p = self.mouse.get_last_clicked(MouseButton::Left);
         println!("{}, {}", p.x, p.y);
         self.image.move_with_func(0);
+        self.text.move_with_func(0);
         Ok(())
     }
     
@@ -109,12 +125,9 @@ impl<'a> ggez::event::EventHandler for State<'a> {
 
         let offset = self.frames as f32 / 10.0;
         let dest_point = nalgebra::Point2::new(offset, offset);
-        graphics::draw(ctx, &self.text,
-                       graphics::DrawParam::default()
-                       .dest(dest_point)
-                       .scale(trojan::numeric::Point2f {x: 0.2, y: 0.5}))?;
-        self.image.draw(ctx)?;
+        self.text.draw(ctx)?;
         self.image.set_alpha(0.1);
+        self.image.draw(ctx)?;
         graphics::present(ctx)?;
 
         self.frames += 1;
@@ -143,16 +156,16 @@ pub fn graphic_test() {
         .unwrap();
 
     let textures = vec![ggraphics::Image::new(ctx, "/ghost1.png").unwrap()];
-    let image = tobj::UniTextureObject::new(
-        &textures[0],
-        trojan::numeric::Point2f { x: 0.0, y: 0.0 },
-        trojan::numeric::Vector2f { x: 1.0, y: 1.0 },
-        0.0,
-        0,
-        Box::new(move |p: & dyn MovableObject, t: Clock| {
-            trojan::numeric::Point2f{x: p.get_position().x + 1.0, y: p.get_position().y}
-        }),
-        0,
+    let image = tobj::SimpleObject::new(
+        MovableUniTexture::new(&textures[0],
+                               trojan::numeric::Point2f { x: 0.0, y: 0.0 },
+                               trojan::numeric::Vector2f { x: 1.0, y: 1.0 },
+                               0.0,
+                               0,
+                               Box::new(move |p: & dyn MovableObject, t: Clock| {
+                                   trojan::numeric::Point2f{x: p.get_position().x + 1.0, y: p.get_position().y}
+                               }),
+                               0),
         vec![]
     );
     let state = &mut State::new(ctx, image).unwrap();
