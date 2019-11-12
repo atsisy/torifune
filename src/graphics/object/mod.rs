@@ -377,7 +377,7 @@ pub struct UniTextureObject<'a> {
 }
 
 impl<'a> UniTextureObject<'a> {
-    fn new(texture: &ggraphics::Image,
+    pub fn new(texture: &ggraphics::Image,
            pos: numeric::Point2f,
            scale: numeric::Vector2f,
            rotation: f32,

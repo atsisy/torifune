@@ -100,6 +100,7 @@ impl<'a> ggez::event::EventHandler for State<'a> {
         self.key.update(ctx, 0);
         let p = self.mouse.get_last_clicked(MouseButton::Left);
         println!("{}, {}", p.x, p.y);
+        self.image.move_with_func(0);
         Ok(())
     }
     
@@ -147,7 +148,12 @@ pub fn graphic_test() {
         trojan::numeric::Point2f { x: 0.0, y: 0.0 },
         trojan::numeric::Vector2f { x: 1.0, y: 1.0 },
         0.0,
-        0
+        0,
+        Box::new(move |p: & dyn MovableObject, t: Clock| {
+            trojan::numeric::Point2f{x: p.get_position().x + 1.0, y: p.get_position().y}
+        }),
+        0,
+        vec![]
     );
     let state = &mut State::new(ctx, image).unwrap();
     event::run(ctx, event_loop, state).unwrap();
