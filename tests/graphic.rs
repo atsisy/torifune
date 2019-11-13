@@ -36,7 +36,6 @@ impl<'a> State<'a> {
     fn new(ctx: &mut Context, image: tobj::SimpleObject<'a>) -> GameResult<State<'a>> {
         let font = graphics::Font::new(ctx, "/azuki.ttf")?;
 
-        
 //        let mut raw_text = graphics::Text::new("Hello");
 //        raw_text.set_font(font, graphics::Scale {x: 48.0, y: 48.0});
 
@@ -50,6 +49,7 @@ impl<'a> State<'a> {
                 Box::new(move |p: & dyn MovableObject, t: Clock| {
                     trojan::numeric::Point2f{x: p.get_position().x + 1.0, y: p.get_position().y}
                 }),
+                trojan::graphics::object::FontInformation::new(font, ggraphics::Scale{ x: 30.0, y: 30.0 }),
                 0),
             vec![]);
         
@@ -103,7 +103,7 @@ impl<'a> State<'a> {
             .register_event_handler(
                 device::VirtualKey::Action2,
                 device::KeyboardEvent::FirstPressed,
-                Box::new(move |_ctx: &Context, _t| { println!("Pre"); Ok(()) }));
+                Box::new(move |_ctx: &Context, _t| { Ok(()) }));
 
         Ok(s)
     }

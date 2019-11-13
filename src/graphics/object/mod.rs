@@ -404,6 +404,30 @@ impl<'a> MovableObject for MovableUniTexture<'a> {
 }
 
 ///
+/// # フォントの情報を持つ構造体
+///
+/// ## フィールド
+/// ### font
+/// フォント
+///
+/// ### scale
+/// フォントのスケール
+///
+pub struct FontInformation {
+    font: ggraphics::Font,
+    scale: ggraphics::Scale,
+}
+
+impl FontInformation {
+    pub fn new(font: ggraphics::Font, scale: ggraphics::Scale) -> FontInformation {
+        FontInformation {
+            font: font,
+            scale: scale
+        }
+    }
+}
+
+///
 /// # Move可能で描画可能なテキスト
 ///
 /// ## フィールド
@@ -420,12 +444,16 @@ impl<'a> MovableObject for MovableUniTexture<'a> {
 /// ### mv_essential
 /// MovableObjectを実装するために必要なフィールド
 ///
+/// ### font_info
+/// フォントの種類やスケールが保持されている
+///
 /// ### birth_time
 /// このオブジェクトが生成された時刻
 ///
 pub struct MovableText {
     drwob_essential: DrawableObjectEssential,
     text: graphics::Text,
+    font_info: FontInformation,
     draw_param: ggraphics::DrawParam,
     mv_essential: MovableEssential,
     birth_time: Clock,
@@ -434,26 +462,51 @@ pub struct MovableText {
 impl MovableText {
     // 生成関数
     pub fn new(text: String,
-           pos: numeric::Point2f,
-           scale: numeric::Vector2f,
-           rotation: f32,
-           drawing_depth: i8,
-           mf: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
-           now: Clock) -> MovableText {
+               pos: numeric::Point2f,
+               scale: numeric::Vector2f,
+               rotation: f32,
+               drawing_depth: i8,
+               mf: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+               font_info: FontInformation,
+               now: Clock) -> MovableText {
 
         let mut param = ggraphics::DrawParam::new();
         param.dest = pos;
         param.scale = scale;
         param.rotation = rotation;
         
-        MovableText {
+        let mut ret_text = MovableText {
             drwob_essential: DrawableObjectEssential::new(true, drawing_depth),
             text: ggraphics::Text::new(text),
+            font_info: font_info,
             draw_param: param,
             mv_essential: MovableEssential::new(mf, now, pos),
             birth_time: now
-        }
+        };
+
+        ret_text.apply_font_information();
+        ret_text
     }
+
+    fn apply_font_information(&mut self) {
+        self.text.set_font(self.font_info.font,
+                           self.font_info.scale);
+    }
+
+    pub fn get_font_scale(&self) -> ggraphics::Scale {
+        self.font_info.scale
+    }
+
+    pub fn set_font_scale(&mut self, scale: ggraphics::Scale) {
+        self.font_info.scale = scale;
+        self.apply_font_information();
+    }
+
+    pub fn change_font(&mut self, font: ggraphics::Font) {
+        self.font_info.font = font;
+        self.apply_font_information();
+    }
+    
 }
 
 impl DrawableObject for MovableText {
@@ -614,6 +667,10 @@ impl<T: MovableObject + TextureObject> GenericEffectableObject<T> {
             movable_object: movable_object,
             geffect_essential: HasGenericEffectEssential::new(effects)
         }
+    }
+
+    pub fn ref_wrapped_object(&mut self) -> &mut T {
+        &mut self.movable_object
     }
 }
 
