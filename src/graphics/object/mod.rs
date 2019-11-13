@@ -403,6 +403,26 @@ impl<'a> MovableObject for MovableUniTexture<'a> {
     }
 }
 
+///
+/// # Move可能で描画可能なテキスト
+///
+/// ## フィールド
+/// ### drwob_essential
+/// DrawableObjectを実装するために持つ構造体
+///
+/// ### text
+/// 文字列の実態
+///
+/// ### draw_param
+/// 主に、Trait TextureObjectをを実装するために持つ構造体
+/// 描画位置, スケールなどの情報を保持している
+///
+/// ### mv_essential
+/// MovableObjectを実装するために必要なフィールド
+///
+/// ### birth_time
+/// このオブジェクトが生成された時刻
+///
 pub struct MovableText {
     drwob_essential: DrawableObjectEssential,
     text: graphics::Text,
@@ -412,6 +432,7 @@ pub struct MovableText {
 }
 
 impl MovableText {
+    // 生成関数
     pub fn new(text: String,
            pos: numeric::Point2f,
            scale: numeric::Vector2f,
@@ -439,6 +460,7 @@ impl DrawableObject for MovableText {
     #[inline(always)]
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         if self.drwob_essential.visible {
+            // textを描画する
             ggraphics::draw(ctx, &self.text, self.draw_param)
         } else {
             Ok(())
@@ -544,6 +566,7 @@ impl TextureObject for MovableText {
 }
 
 impl HasBirthTime for MovableText {
+    #[inline(always)]
     fn get_birth_time(&self) -> Clock {
         self.birth_time
     }
@@ -564,7 +587,6 @@ impl MovableObject for MovableText {
         self.mv_essential.mf_set_time = now;
     }
 }
-
 
 ///
 /// # エフェクトを掛けるためのジェネリック構造体
