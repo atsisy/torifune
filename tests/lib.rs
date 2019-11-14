@@ -1,5 +1,5 @@
-extern crate trojan;
-use trojan::core::*;
+extern crate torifune;
+use torifune::core::*;
 
 #[test]
 fn check_scheduled_event() {

@@ -24,7 +24,7 @@ impl<Args> ScheduledEvent<Args> {
     ///
     /// # Example
     /// ```
-    ///     use trojan::core::*;
+    ///     use torifune::core::*;
     ///
     ///     let event = ScheduledEvent::new(&move |x: i32| {
     ///         println!("Event is Called {}", x);

@@ -1,5 +1,5 @@
 [package]
-name = "trojan"
+name = "torifune"
 version = "0.1.0"
 authors = ["Akihiro Takai <at.sisy@gmail.com>"]
 edition = "2018"
@@ -9,4 +9,3 @@ edition = "2018"
 [dependencies]
 ggez = "0.5"
 cgmath = "0.9.1"
-toml = "0.5.5"

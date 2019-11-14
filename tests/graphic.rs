@@ -2,12 +2,12 @@ use ggez::*;
 use ggez::input::mouse::MouseButton;
 use std::env;
 use std::path;
-use trojan::device;
-use trojan::graphics::object as tobj;
+use torifune::device;
+use torifune::graphics::object as tobj;
 use ggez::graphics as ggraphics;
-use trojan::core::Updatable;
-use trojan::graphics::object::*;
-use trojan::core::Clock;
+use torifune::core::Updatable;
+use torifune::graphics::object::*;
+use torifune::core::Clock;
 
 struct State<'a> {
     frames: usize,
@@ -42,14 +42,14 @@ impl<'a> State<'a> {
         let text = tobj::SimpleText::new(
             MovableText::new(
                 "Hello".to_owned(),
-                trojan::numeric::Point2f { x: 0.0, y: 0.0 },
-                trojan::numeric::Vector2f { x: 1.0, y: 1.0 },
+                torifune::numeric::Point2f { x: 0.0, y: 0.0 },
+                torifune::numeric::Vector2f { x: 1.0, y: 1.0 },
                 0.0,
                 0,
                 Box::new(move |p: & dyn MovableObject, t: Clock| {
-                    trojan::numeric::Point2f{x: p.get_position().x + 1.0, y: p.get_position().y}
+                    torifune::numeric::Point2f{x: p.get_position().x + 1.0, y: p.get_position().y}
                 }),
-                trojan::graphics::object::FontInformation::new(font, ggraphics::Scale{ x: 30.0, y: 30.0 }),
+                torifune::graphics::object::FontInformation::new(font, ggraphics::Scale{ x: 30.0, y: 30.0 }),
                 0),
             vec![]);
         
@@ -63,11 +63,17 @@ impl<'a> State<'a> {
             image: image
         };
 
+
+        Ok(s)
+    }
+
+    pub fn init(&mut self) {
+
         /*
-        * indirect closure inserting
-        */
+         * indirect closure inserting
+         */
         let p = sample_mouse_closure("sample_closure!!");
-        s.mouse
+        self.mouse
             .register_event_handler(
                 MouseButton::Left,
                 device::MouseButtonEvent::Clicked,
@@ -77,35 +83,34 @@ impl<'a> State<'a> {
         /*
          * direct closure inserting with closure returing func
          */
-        s.mouse
+        self.mouse
             .register_event_handler(
                 MouseButton::Left,
                 device::MouseButtonEvent::Pressed,
                 sample_mouse_closure("Left button is Pressed!!"));
-
         /*
          * direct closure inserting with lambda
          */
-        s.mouse
+        self.mouse
             .register_event_handler(
                 MouseButton::Left,
                 device::MouseButtonEvent::Dragged,
-                Box::new(move |_ctx: &Context, _t| { println!("Dragging!!"); Ok(()) }));
-
-        s.key
+                Box::new( |_ctx: &Context, _t| {
+                    println!("Dragging!!"); Ok(())
+                }));
+        
+        self.key
             .register_event_handler(
                 device::VirtualKey::Action1,
                 device::KeyboardEvent::FirstPressed,
                 sample_keyboard_closure("Pressed!!")
             );
 
-        s.key
+        self.key
             .register_event_handler(
                 device::VirtualKey::Action2,
                 device::KeyboardEvent::FirstPressed,
                 Box::new(move |_ctx: &Context, _t| { Ok(()) }));
-
-        Ok(s)
     }
 }
 
@@ -124,7 +129,6 @@ impl<'a> ggez::event::EventHandler for State<'a> {
         graphics::clear(ctx, [0.0, 0.0, 0.0, 0.0].into());
 
         let offset = self.frames as f32 / 10.0;
-        let dest_point = nalgebra::Point2::new(offset, offset);
         self.text.draw(ctx)?;
         self.image.set_alpha(0.1);
         self.image.draw(ctx)?;
@@ -158,16 +162,17 @@ pub fn graphic_test() {
     let textures = vec![ggraphics::Image::new(ctx, "/ghost1.png").unwrap()];
     let image = tobj::SimpleObject::new(
         MovableUniTexture::new(&textures[0],
-                               trojan::numeric::Point2f { x: 0.0, y: 0.0 },
-                               trojan::numeric::Vector2f { x: 1.0, y: 1.0 },
+                               torifune::numeric::Point2f { x: 0.0, y: 0.0 },
+                               torifune::numeric::Vector2f { x: 1.0, y: 1.0 },
                                0.0,
                                0,
                                Box::new(move |p: & dyn MovableObject, t: Clock| {
-                                   trojan::numeric::Point2f{x: p.get_position().x + 1.0, y: p.get_position().y}
+                                   torifune::numeric::Point2f{x: p.get_position().x + 1.0, y: p.get_position().y}
                                }),
                                0),
         vec![]
     );
     let state = &mut State::new(ctx, image).unwrap();
+    state.init();
     event::run(ctx, event_loop, state).unwrap();
 }
