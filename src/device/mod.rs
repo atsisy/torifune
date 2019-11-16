@@ -371,7 +371,7 @@ fn vkey_input_check_generic_keyboard(ctx: &Context, vkey: &VirtualKey) -> KeySta
             VirtualKey::Mod3 => input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::ALT),
             VirtualKey::Mod4 => input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::LOGO),
             _ => false,
-        }       
+        }
     )
 }
 
@@ -536,5 +536,75 @@ impl Updatable for KeyboardListener {
         }
         
         Ok(())
+    }
+}
+
+///
+/// 設定可能なキーマップを提供するトレイト
+///
+pub trait ProgramableKey {
+    fn update_config(&mut self, real: input::keyboard::KeyCode, virt: VirtualKey);
+    fn virtual_to_real(&self, virt: VirtualKey) -> input::keyboard::KeyCode;
+    fn real_to_virtual(&self, real: input::keyboard::KeyCode) -> VirtualKey;
+}
+
+///
+/// 一般的なキーボードのためのキーマップ
+///
+pub struct ProgramableGenericKey {
+    key_map: HashMap<input::keyboard::KeyCode, VirtualKey>,
+}
+
+impl ProgramableGenericKey {
+    /// デフォルト設定
+    pub fn new() -> ProgramableGenericKey {
+        ProgramableGenericKey {
+            key_map: hash![
+                (input::keyboard::KeyCode::Left, VirtualKey::Left),
+                (input::keyboard::KeyCode::Right, VirtualKey::Right),
+                (input::keyboard::KeyCode::Up, VirtualKey::Up),
+                (input::keyboard::KeyCode::Down, VirtualKey::Down),
+                (input::keyboard::KeyCode::A, VirtualKey::LeftSub),
+                (input::keyboard::KeyCode::D, VirtualKey::RightSub),
+                (input::keyboard::KeyCode::W, VirtualKey::UpSub),
+                (input::keyboard::KeyCode::S, VirtualKey::DownSub),
+                (input::keyboard::KeyCode::J, VirtualKey::LeftSubSub),
+                (input::keyboard::KeyCode::L, VirtualKey::RightSubSub),
+                (input::keyboard::KeyCode::I, VirtualKey::UpSubSub),
+                (input::keyboard::KeyCode::K, VirtualKey::DownSubSub),
+                (input::keyboard::KeyCode::Z, VirtualKey::Action1),
+                (input::keyboard::KeyCode::X, VirtualKey::Action2),
+                (input::keyboard::KeyCode::C, VirtualKey::Action3),
+                (input::keyboard::KeyCode::V, VirtualKey::Action4),
+                (input::keyboard::KeyCode::N, VirtualKey::Action5),
+                (input::keyboard::KeyCode::M, VirtualKey::Action6),
+                (input::keyboard::KeyCode::Comma, VirtualKey::Action7),
+                (input::keyboard::KeyCode::Period, VirtualKey::Action8)]
+        }
+    }
+}
+
+impl ProgramableKey for ProgramableGenericKey {
+    
+    fn update_config(&mut self, real: input::keyboard::KeyCode, virt: VirtualKey) {
+        self.key_map.insert(real, virt);
+    }
+    
+    fn virtual_to_real(&self, virt_key: VirtualKey) -> input::keyboard::KeyCode {
+        // keyから探す
+        for (k, v) in &self.key_map {
+            if *v == virt_key {
+                return *k;
+            }
+        }
+
+        panic!("Non implemented virtual Key: {}", virt_key as i32);
+    }
+    
+    fn real_to_virtual(&self, real: input::keyboard::KeyCode) -> VirtualKey {
+        match self.key_map.get(&real) {
+            Some(virt) => *virt,
+            None => panic!("Unknown real key"),
+        }
     }
 }
