@@ -35,6 +35,9 @@ pub trait DrawableObject {
 
     /// 描画開始地点を返す
     fn get_position(&self) -> numeric::Point2f;
+
+    /// offsetで指定しただけ描画位置を動かす
+    fn move_diff(&mut self, offset: numeric::Vector2f);
 }
 
 ///
@@ -77,6 +80,9 @@ pub trait TextureObject : DrawableObject {
 
     /// テクスチャに対するエフェクトの始点を返す
     fn get_transform_offset(&self) -> numeric::Point2f;
+
+    /// 実際に描画が行われるエリアをRectで返す
+    fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect;
 }
 
 ///
@@ -316,6 +322,12 @@ impl<'a> DrawableObject for MovableUniTexture<'a> {
     fn get_position(&self) -> numeric::Point2f {
         self.draw_param.dest
     }
+
+    #[inline(always)]
+    fn move_diff(&mut self, offset: numeric::Vector2f) {
+        self.draw_param.dest.x += offset.x;
+        self.draw_param.dest.y += offset.y;
+    }
 }
 
 impl<'a> TextureObject for MovableUniTexture<'a> {
@@ -378,7 +390,15 @@ impl<'a> TextureObject for MovableUniTexture<'a> {
     fn get_transform_offset(&self) -> numeric::Point2f {
         self.draw_param.offset
     }
-    
+
+    #[inline(always)]
+    fn get_drawing_area(&self, _ctx: &mut ggez::Context) -> ggraphics::Rect {
+        let point = self.get_position();
+        let scale = self.get_scale();
+        ggraphics::Rect::new(
+            point.x, point.y,
+            (self.texture.width() as f32) * scale.x, (self.texture.height() as f32) * scale.y)
+    }
 }
 
 impl<'a> HasBirthTime for MovableUniTexture<'a> {
@@ -554,6 +574,12 @@ impl DrawableObject for MovableText {
     fn get_position(&self) -> numeric::Point2f {
         self.draw_param.dest
     }
+
+    #[inline(always)]
+    fn move_diff(&mut self, offset: numeric::Vector2f) {
+        self.draw_param.dest.x += offset.x;
+        self.draw_param.dest.y += offset.y;
+    }
 }
 
 impl TextureObject for MovableText {
@@ -615,6 +641,15 @@ impl TextureObject for MovableText {
     #[inline(always)]
     fn get_transform_offset(&self) -> numeric::Point2f {
         self.draw_param.offset
+    }
+
+    #[inline(always)]
+    fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect {
+        let point = self.get_position();
+        let scale = self.get_scale();
+        ggraphics::Rect::new(
+            point.x, point.y,
+            (self.text.width(ctx) as f32) * scale.x, (self.text.height(ctx) as f32) * scale.y)
     }
 }
 
@@ -714,6 +749,11 @@ impl<T: MovableObject + TextureObject> DrawableObject for GenericEffectableObjec
     fn get_position(&self) -> numeric::Point2f {
         self.movable_object.get_position()
     }
+
+    #[inline(always)]
+    fn move_diff(&mut self, offset: numeric::Vector2f) {
+        self.movable_object.move_diff(offset);
+    }
 }
 
 impl<T: MovableObject + TextureObject> TextureObject for GenericEffectableObject<T> {
@@ -775,6 +815,11 @@ impl<T: MovableObject + TextureObject> TextureObject for GenericEffectableObject
     #[inline(always)]
     fn get_transform_offset(&self) -> numeric::Point2f {
         self.movable_object.get_transform_offset()
+    }
+
+    #[inline(always)]
+    fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect {
+        self.movable_object.get_drawing_area(ctx)
     }
     
 }

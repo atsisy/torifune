@@ -35,3 +35,4 @@ pub type Vector3u64 = mint::Vector3<u64>;
 
 pub type Vector3f = mint::Vector3<f32>;
 pub type Vector3f64 = mint::Vector3<f64>;
+
