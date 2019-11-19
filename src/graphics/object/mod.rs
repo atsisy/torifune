@@ -3,6 +3,8 @@ use ggez::*;
 use super::super::numeric;
 use crate::core::Clock;
 
+use std::cmp::Ordering;
+
 ///
 /// # 基本的な描画処理を保証させるトレイト
 /// 汎用的なdrawインターフェイスを提供する
@@ -38,6 +40,42 @@ pub trait DrawableObject {
 
     /// offsetで指定しただけ描画位置を動かす
     fn move_diff(&mut self, offset: numeric::Vector2f);
+}
+
+///
+/// DrawableObjectを深度（Z軸）でソートするための関数
+///
+/// この関数でソートすると、深度が深いものが先頭に来るようにソートされる
+///
+pub fn drawable_object_sort_with_depth<T, U>(a: &T, b: &U) -> Ordering
+where T: DrawableObject,
+      U: DrawableObject {
+    let (ad, bd) = (a.get_drawing_depth(), b.get_drawing_depth());
+    if ad > bd {
+        Ordering::Less
+    } else if ad < bd {
+        Ordering::Greater
+    } else {
+        Ordering::Equal
+    }
+}
+
+///
+/// DrawableObjectを深度（Z軸）でソートするための関数
+///
+/// この関数でソートすると、深度が深いものが先頭に来るようにソートされる
+///
+pub fn boxed_drawable_object_sort_with_depth<T, U>(a: &Box<T>, b: &Box<U>) -> Ordering
+where T: DrawableObject,
+      U: DrawableObject {
+    let (ad, bd) = (a.get_drawing_depth(), b.get_drawing_depth());
+    if ad > bd {
+        Ordering::Less
+    } else if ad < bd {
+        Ordering::Greater
+    } else {
+        Ordering::Equal
+    }
 }
 
 ///
@@ -83,6 +121,9 @@ pub trait TextureObject : DrawableObject {
 
     /// 実際に描画が行われるエリアをRectで返す
     fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect;
+
+    /// 実際に描画が行われる幅と高さを返す
+    fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f;
 }
 
 ///
@@ -96,14 +137,14 @@ pub trait TextureObject : DrawableObject {
 /// ### drawing_depth
 /// i8型
 ///
-struct DrawableObjectEssential {
+pub struct DrawableObjectEssential {
     pub visible: bool,
     pub drawing_depth: i8,
 }
 
 impl DrawableObjectEssential {
     // DrawableObjectEssentialの生成関数
-    fn new(visible: bool, depth: i8) -> DrawableObjectEssential {
+    pub fn new(visible: bool, depth: i8) -> DrawableObjectEssential {
         DrawableObjectEssential {
             visible: visible,
             drawing_depth: depth
@@ -399,6 +440,14 @@ impl<'a> TextureObject for MovableUniTexture<'a> {
             point.x, point.y,
             (self.texture.width() as f32) * scale.x, (self.texture.height() as f32) * scale.y)
     }
+
+    #[inline(always)]
+    fn get_drawing_size(&self, _ctx: &mut ggez::Context) -> numeric::Vector2f {
+        let scale = self.get_scale();
+        numeric::Vector2f {
+            x: (self.texture.width() as f32) * scale.x,
+            y: (self.texture.height() as f32) * scale.y }
+    }
 }
 
 impl<'a> HasBirthTime for MovableUniTexture<'a> {
@@ -651,6 +700,14 @@ impl TextureObject for MovableText {
             point.x, point.y,
             (self.text.width(ctx) as f32) * scale.x, (self.text.height(ctx) as f32) * scale.y)
     }
+
+    #[inline(always)]
+    fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
+        let scale = self.get_scale();
+        numeric::Vector2f {
+            x: (self.text.width(ctx) as f32) * scale.x,
+            y: (self.text.height(ctx) as f32) * scale.y }
+    }
 }
 
 impl HasBirthTime for MovableText {
@@ -821,7 +878,11 @@ impl<T: MovableObject + TextureObject> TextureObject for GenericEffectableObject
     fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect {
         self.movable_object.get_drawing_area(ctx)
     }
-    
+
+    #[inline(always)]
+    fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
+        self.movable_object.get_drawing_size(ctx)
+    }   
 }
 
 impl<T: MovableObject + TextureObject> HasBirthTime for GenericEffectableObject<T> {
@@ -868,3 +929,4 @@ impl<T: MovableObject + TextureObject> Effectable for GenericEffectableObject<T>
 
 pub type SimpleObject<'a> = GenericEffectableObject<MovableUniTexture<'a>>;
 pub type SimpleText = GenericEffectableObject<MovableText>;
+
