@@ -8,4 +8,4 @@ edition = "2018"
 
 [dependencies]
 ggez = "0.5"
-cgmath = "0.9.1"
+nalgebra = "0.18.1"

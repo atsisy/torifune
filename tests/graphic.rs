@@ -42,12 +42,12 @@ impl<'a> State<'a> {
         let text = tobj::SimpleText::new(
             MovableText::new(
                 "Hello".to_owned(),
-                torifune::numeric::Point2f { x: 0.0, y: 0.0 },
-                torifune::numeric::Vector2f { x: 1.0, y: 1.0 },
+                torifune::numeric::Point2f::new(0.0, 0.0),
+                torifune::numeric::Vector2f::new(1.0, 1.0),
                 0.0,
                 0,
                 Box::new(move |p: & dyn MovableObject, t: Clock| {
-                    torifune::numeric::Point2f{x: p.get_position().x + 1.0, y: p.get_position().y}
+                    torifune::numeric::Point2f::new(p.get_position().x + 1.0, p.get_position().y)
                 }),
                 torifune::graphics::object::FontInformation::new(font, ggraphics::Scale{ x: 30.0, y: 30.0 }),
                 0),
@@ -162,12 +162,12 @@ pub fn graphic_test() {
     let textures = vec![ggraphics::Image::new(ctx, "/ghost1.png").unwrap()];
     let image = tobj::SimpleObject::new(
         MovableUniTexture::new(&textures[0],
-                               torifune::numeric::Point2f { x: 0.0, y: 0.0 },
-                               torifune::numeric::Vector2f { x: 1.0, y: 1.0 },
+                               torifune::numeric::Point2f::new(0.0, 0.0),
+                               torifune::numeric::Vector2f::new(1.0, 1.0),
                                0.0,
                                0,
                                Box::new(move |p: & dyn MovableObject, t: Clock| {
-                                   torifune::numeric::Point2f{x: p.get_position().x + 1.0, y: p.get_position().y}
+                                   torifune::numeric::Point2f::new(p.get_position().x + 1.0, p.get_position().y)
                                }),
                                0),
         vec![]

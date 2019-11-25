@@ -305,8 +305,8 @@ impl<'a> MovableUniTexture<'a> {
                now: Clock
     ) -> MovableUniTexture {
         let mut param = ggraphics::DrawParam::new();
-        param.dest = pos;
-        param.scale = scale;
+        param.dest = pos.into();
+        param.scale = scale.into();
         param.rotation = rotation;
 
         // visibleはデフォルトでtrueに設定
@@ -356,12 +356,12 @@ impl<'a> DrawableObject for MovableUniTexture<'a> {
 
     #[inline(always)]
     fn set_position(&mut self, pos: numeric::Point2f) {
-        self.draw_param.dest = pos;
+        self.draw_param.dest = pos.into();
     }
 
     #[inline(always)]
     fn get_position(&self) -> numeric::Point2f {
-        self.draw_param.dest
+        self.draw_param.dest.into()
     }
 
     #[inline(always)]
@@ -374,12 +374,12 @@ impl<'a> DrawableObject for MovableUniTexture<'a> {
 impl<'a> TextureObject for MovableUniTexture<'a> {
     #[inline(always)]
     fn set_scale(&mut self, scale: numeric::Vector2f) {
-        self.draw_param.scale = scale;
+        self.draw_param.scale = scale.into();
     }
 
     #[inline(always)]
     fn get_scale(&self) -> numeric::Vector2f {
-        self.draw_param.scale
+        self.draw_param.scale.into()
     }
 
     #[inline(always)]
@@ -424,12 +424,12 @@ impl<'a> TextureObject for MovableUniTexture<'a> {
 
     #[inline(always)]
     fn set_transform_offset(&mut self, offset: numeric::Point2f) {
-        self.draw_param.offset = offset;
+        self.draw_param.offset = offset.into();
     }
 
     #[inline(always)]
     fn get_transform_offset(&self) -> numeric::Point2f {
-        self.draw_param.offset
+        self.draw_param.offset.into()
     }
 
     #[inline(always)]
@@ -444,9 +444,9 @@ impl<'a> TextureObject for MovableUniTexture<'a> {
     #[inline(always)]
     fn get_drawing_size(&self, _ctx: &mut ggez::Context) -> numeric::Vector2f {
         let scale = self.get_scale();
-        numeric::Vector2f {
-            x: (self.texture.width() as f32) * scale.x,
-            y: (self.texture.height() as f32) * scale.y }
+        numeric::Vector2f::new(
+            (self.texture.width() as f32) * scale.x,
+            (self.texture.height() as f32) * scale.y)
     }
 }
 
@@ -540,8 +540,8 @@ impl MovableText {
                now: Clock) -> MovableText {
 
         let mut param = ggraphics::DrawParam::new();
-        param.dest = pos;
-        param.scale = scale;
+        param.dest = pos.into();
+        param.scale = scale.into();
         param.rotation = rotation;
         
         let mut ret_text = MovableText {
@@ -616,12 +616,12 @@ impl DrawableObject for MovableText {
 
     #[inline(always)]
     fn set_position(&mut self, pos: numeric::Point2f) {
-        self.draw_param.dest = pos;
+        self.draw_param.dest = pos.into();
     }
 
     #[inline(always)]
     fn get_position(&self) -> numeric::Point2f {
-        self.draw_param.dest
+        self.draw_param.dest.into()
     }
 
     #[inline(always)]
@@ -634,12 +634,12 @@ impl DrawableObject for MovableText {
 impl TextureObject for MovableText {
     #[inline(always)]
     fn set_scale(&mut self, scale: numeric::Vector2f) {
-        self.draw_param.scale = scale;
+        self.draw_param.scale = scale.into();
     }
 
     #[inline(always)]
     fn get_scale(&self) -> numeric::Vector2f {
-        self.draw_param.scale
+        self.draw_param.scale.into()
     }
 
     #[inline(always)]
@@ -684,12 +684,12 @@ impl TextureObject for MovableText {
 
     #[inline(always)]
     fn set_transform_offset(&mut self, offset: numeric::Point2f) {
-        self.draw_param.offset = offset;
+        self.draw_param.offset = offset.into();
     }
 
     #[inline(always)]
     fn get_transform_offset(&self) -> numeric::Point2f {
-        self.draw_param.offset
+        self.draw_param.offset.into()
     }
 
     #[inline(always)]
@@ -704,9 +704,9 @@ impl TextureObject for MovableText {
     #[inline(always)]
     fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
         let scale = self.get_scale();
-        numeric::Vector2f {
-            x: (self.text.width(ctx) as f32) * scale.x,
-            y: (self.text.height(ctx) as f32) * scale.y }
+        numeric::Vector2f::new(
+            (self.text.width(ctx) as f32) * scale.x,
+            (self.text.height(ctx) as f32) * scale.y)
     }
 }
 

@@ -90,9 +90,9 @@ impl MouseListener {
         
         MouseListener {
             last_clicked: hash![
-                (MouseButton::Left, numeric::Point2f { x: 0.0, y: 0.0 }),
-                (MouseButton::Middle, numeric::Point2f { x: 0.0, y: 0.0 }),
-                (MouseButton::Right, numeric::Point2f  {x: 0.0, y: 0.0 })
+                (MouseButton::Left, numeric::Point2f::new(0.0, 0.0)),
+                (MouseButton::Middle, numeric::Point2f::new(0.0, 0.0)),
+                (MouseButton::Right, numeric::Point2f::new(0.0, 0.0))
             ],
             button_map: button_map,
             event_handlers: events,
@@ -117,7 +117,7 @@ impl MouseListener {
     //
     #[inline(always)]
     pub fn get_position(ctx: &ggez::Context) -> numeric::Point2f {
-        input::mouse::position(ctx)
+        input::mouse::position(ctx).into()
     }
 
     fn check_button(ctx: &ggez::Context, button: MouseButton) -> MouseButtonStatus {
