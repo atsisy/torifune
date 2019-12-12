@@ -35,3 +35,5 @@ pub type Vector3u64 = nalgebra::base::Vector3<u64>;
 
 pub type Vector3f = nalgebra::base::Vector3<f32>;
 pub type Vector3f64 = nalgebra::base::Vector3<f64>;
+
+pub type Rect = ggez::graphics::Rect;

@@ -3,6 +3,7 @@ use ggez::*;
 use super::super::numeric;
 use crate::core::Clock;
 use super::{DrawableObject, DrawableObjectEssential};
+use std::rc::Rc;
 
 ///
 /// # テクスチャを利用して描画を行うために必要なインターフェイスを保証させるトレイト
@@ -50,6 +51,10 @@ pub trait TextureObject : DrawableObject {
 
     /// 実際に描画が行われる幅と高さを返す
     fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f;
+
+    /// 現在のテクスチャを入れ替えるメソッド
+    fn replace_texture(&mut self, _texture: Rc<ggraphics::Image>)
+    {}
 }
 
 ///
@@ -165,15 +170,15 @@ impl HasGenericEffectEssential {
 /// ### birth_time
 /// このオブジェクトが生成された時刻
 ///
-pub struct MovableUniTexture<'a> {
+pub struct MovableUniTexture {
     drwob_essential: DrawableObjectEssential,
-    texture: &'a ggraphics::Image,
+    texture: Rc<ggraphics::Image>,
     draw_param: ggraphics::DrawParam,
     mv_essential: MovableEssential,
     birth_time: Clock,
 }
 
-impl<'a> MovableUniTexture<'a> {
+impl MovableUniTexture {
     
     ///
     /// # 関連関数 new
@@ -195,7 +200,7 @@ impl<'a> MovableUniTexture<'a> {
     /// ### drawing_depth
     /// 描画優先度
     ///
-    pub fn new(texture: &ggraphics::Image,
+    pub fn new(texture: Rc<ggraphics::Image>,
                pos: numeric::Point2f,
                scale: numeric::Vector2f,
                rotation: f32,
@@ -219,10 +224,10 @@ impl<'a> MovableUniTexture<'a> {
     }
 }
 
-impl<'a> DrawableObject for MovableUniTexture<'a> {
+impl DrawableObject for MovableUniTexture {
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         if self.drwob_essential.visible {
-            ggraphics::draw(ctx, self.texture, self.draw_param)
+            ggraphics::draw(ctx, &*self.texture, self.draw_param)
         } else {
             Ok(())
         }
@@ -270,7 +275,7 @@ impl<'a> DrawableObject for MovableUniTexture<'a> {
     }
 }
 
-impl<'a> TextureObject for MovableUniTexture<'a> {
+impl TextureObject for MovableUniTexture {
     #[inline(always)]
     fn set_scale(&mut self, scale: numeric::Vector2f) {
         self.draw_param.scale = scale.into();
@@ -347,19 +352,23 @@ impl<'a> TextureObject for MovableUniTexture<'a> {
             (self.texture.width() as f32) * scale.x,
             (self.texture.height() as f32) * scale.y)
     }
+
+    fn replace_texture(&mut self, texture: Rc<ggraphics::Image>) {
+        self.texture = texture;
+    }
 }
 
-impl<'a> HasBirthTime for MovableUniTexture<'a> {
+impl HasBirthTime for MovableUniTexture {
     fn get_birth_time(&self) -> Clock {
         self.birth_time
     }
 }
 
-impl<'a> MovableObject for MovableUniTexture<'a> {
+impl MovableObject for MovableUniTexture {
 
     fn move_with_func(&mut self, t: Clock) {
         // クロージャにはselfと経過時間を与える
-        self.set_position((self.mv_essential.move_func)(self, t - self.birth_time));
+        self.set_position((self.mv_essential.move_func)(self, t - self.mv_essential.mf_set_time));
     }
 
     // 従う関数を変更する
@@ -620,7 +629,7 @@ impl MovableObject for MovableText {
 
     fn move_with_func(&mut self, t: Clock) {
         // クロージャにはselfと経過時間を与える
-        self.set_position((self.mv_essential.move_func)(self, t - self.birth_time));
+        self.set_position((self.mv_essential.move_func)(self, t - self.mv_essential.mf_set_time));
     }
 
     // 従う関数を変更する
@@ -826,6 +835,6 @@ impl<T: MovableObject + TextureObject> Effectable for GenericEffectableObject<T>
     }
 }
 
-pub type SimpleObject<'a> = GenericEffectableObject<MovableUniTexture<'a>>;
+pub type SimpleObject = GenericEffectableObject<MovableUniTexture>;
 pub type SimpleText = GenericEffectableObject<MovableText>;
 

@@ -186,7 +186,7 @@ impl MouseListener {
 }
 
 impl Updatable for MouseListener {
-    fn update(&mut self, ctx: &ggez::Context, t: Clock) -> Result<(), &'static str> {
+    fn update(&mut self, ctx: &ggez::Context, t: Clock) {
 
         let (l_status, m_status, r_status) = (
             MouseListener::check_button(ctx, MouseButton::Left),
@@ -203,7 +203,6 @@ impl Updatable for MouseListener {
         self.button_map.insert(MouseButton::Middle, m_status);
         self.button_map.insert(MouseButton::Right, r_status);
         
-        Ok(())
     }
 }
 
@@ -510,10 +509,9 @@ impl KeyboardListener {
     }
 
     ///
-    /// 複数のキー入力デバイスの状態をミックスするメソッド
-    /// 基本的に内部メソッドとして利用する
+    /// 複数のキー入力デバイスの状態をミックスするメソッドs
     ///
-    fn current_key_status(&self, ctx: &ggez::Context, vkey: &VirtualKey) -> KeyStatus {
+    pub fn current_key_status(&self, ctx: &ggez::Context, vkey: &VirtualKey) -> KeyStatus {
         
         for device in &self.devices {
             if vkey_input_check(ctx, device, vkey) == KeyStatus::Pressed {
@@ -527,7 +525,7 @@ impl KeyboardListener {
 }
 
 impl Updatable for KeyboardListener {
-    fn update(&mut self, ctx: &ggez::Context, t: Clock) -> Result<(), &'static str> {
+    fn update(&mut self, ctx: &ggez::Context, t: Clock) {
 
         for vkey in &self.listening {
             let current_state = self.current_key_status(ctx, vkey);
@@ -535,7 +533,6 @@ impl Updatable for KeyboardListener {
             self.key_map[*vkey as usize] = current_state;
         }
         
-        Ok(())
     }
 }
 
@@ -608,3 +605,5 @@ impl ProgramableKey for ProgramableGenericKey {
         }
     }
 }
+
+

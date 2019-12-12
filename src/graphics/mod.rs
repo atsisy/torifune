@@ -34,13 +34,17 @@ pub trait DrawableObject {
     fn get_drawing_depth(&self) -> i8;
 
     /// 描画開始地点を設定する
-    fn set_position(&mut self, pos: numeric::Point2f);
+    fn set_position(&mut self, _pos: numeric::Point2f) {
+    }
 
     /// 描画開始地点を返す
-    fn get_position(&self) -> numeric::Point2f;
+    fn get_position(&self) -> numeric::Point2f {
+        numeric::Point2f::new(0.0, 0.0)
+    }
 
     /// offsetで指定しただけ描画位置を動かす
-    fn move_diff(&mut self, offset: numeric::Vector2f);
+    fn move_diff(&mut self, _offset: numeric::Vector2f) {
+    }
 }
 
 ///
