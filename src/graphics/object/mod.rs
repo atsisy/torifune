@@ -2,7 +2,7 @@ use ggez::graphics as ggraphics;
 use ggez::*;
 use super::super::numeric;
 use crate::core::Clock;
-use super::{DrawableObject, DrawableObjectEssential};
+use super::{DrawableComponent, DrawableObject, DrawableObjectEssential};
 use std::rc::Rc;
 
 ///
@@ -53,8 +53,7 @@ pub trait TextureObject : DrawableObject {
     fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f;
 
     /// 現在のテクスチャを入れ替えるメソッド
-    fn replace_texture(&mut self, _texture: Rc<ggraphics::Image>)
-    {}
+    fn replace_texture(&mut self, texture: Rc<ggraphics::Image>);
 }
 
 ///
@@ -224,7 +223,7 @@ impl MovableUniTexture {
     }
 }
 
-impl DrawableObject for MovableUniTexture {
+impl DrawableComponent for MovableUniTexture {
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         if self.drwob_essential.visible {
             ggraphics::draw(ctx, &*self.texture, self.draw_param)
@@ -257,6 +256,10 @@ impl DrawableObject for MovableUniTexture {
     fn get_drawing_depth(&self) -> i8 {
         self.drwob_essential.drawing_depth
     }
+
+}
+
+impl DrawableObject for MovableUniTexture {
 
     #[inline(always)]
     fn set_position(&mut self, pos: numeric::Point2f) {
@@ -486,7 +489,7 @@ impl MovableText {
     
 }
 
-impl DrawableObject for MovableText {
+impl DrawableComponent for MovableText {
     #[inline(always)]
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         if self.drwob_essential.visible {
@@ -521,6 +524,9 @@ impl DrawableObject for MovableText {
     fn get_drawing_depth(&self) -> i8 {
         self.drwob_essential.drawing_depth
     }
+}
+
+impl DrawableObject for MovableText {
 
     #[inline(always)]
     fn set_position(&mut self, pos: numeric::Point2f) {
@@ -616,6 +622,10 @@ impl TextureObject for MovableText {
             (self.text.width(ctx) as f32) * scale.x,
             (self.text.height(ctx) as f32) * scale.y)
     }
+
+    #[inline(always)]
+    fn replace_texture(&mut self, _texture: Rc<ggraphics::Image>)
+    {}
 }
 
 impl HasBirthTime for MovableText {
@@ -674,7 +684,7 @@ impl<T: MovableObject + TextureObject> GenericEffectableObject<T> {
     }
 }
 
-impl<T: MovableObject + TextureObject> DrawableObject for GenericEffectableObject<T> {
+impl<T: MovableObject + TextureObject> DrawableComponent for GenericEffectableObject<T> {
     #[inline(always)]
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         self.movable_object.draw(ctx)
@@ -705,6 +715,9 @@ impl<T: MovableObject + TextureObject> DrawableObject for GenericEffectableObjec
         self.movable_object.get_drawing_depth()
     }
 
+}
+
+impl<T: MovableObject + TextureObject> DrawableObject for GenericEffectableObject<T> {
     #[inline(always)]
     fn set_position(&mut self, pos: numeric::Point2f) {
         self.movable_object.set_position(pos)
@@ -790,7 +803,13 @@ impl<T: MovableObject + TextureObject> TextureObject for GenericEffectableObject
     #[inline(always)]
     fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
         self.movable_object.get_drawing_size(ctx)
-    }   
+    }
+
+    #[inline(always)]
+    fn replace_texture(&mut self, texture: Rc<ggraphics::Image>)
+    {
+        self.movable_object.replace_texture(texture);
+    }
 }
 
 impl<T: MovableObject + TextureObject> HasBirthTime for GenericEffectableObject<T> {

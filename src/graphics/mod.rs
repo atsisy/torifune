@@ -6,11 +6,7 @@ use std::cmp::Ordering;
 
 pub type Texture = ggraphics::Image;
 
-///
-/// # 基本的な描画処理を保証させるトレイト
-/// 汎用的なdrawインターフェイスを提供する
-///
-pub trait DrawableObject {
+pub trait DrawableComponent {
     /// このトレイトを実装する場合、このメソッドには描画を行う処理を記述する
     fn draw(&self, ctx: &mut ggez::Context) -> ggez::GameResult<()>;
 
@@ -32,6 +28,14 @@ pub trait DrawableObject {
 
     /// 描画順序を返す
     fn get_drawing_depth(&self) -> i8;
+    
+}
+
+///
+/// # 基本的な描画処理を保証させるトレイト
+/// 汎用的なdrawインターフェイスを提供する
+///
+pub trait DrawableObject : DrawableComponent {
 
     /// 描画開始地点を設定する
     fn set_position(&mut self, _pos: numeric::Point2f) {
@@ -144,7 +148,7 @@ impl SubScreen {
     }
 }
 
-impl DrawableObject for SubScreen {
+impl DrawableComponent for SubScreen {
 
     fn draw(&self, ctx: &mut ggez::Context) -> ggez::GameResult<()> {
         ggraphics::draw(ctx, &self.canvas, self.draw_param)
@@ -171,6 +175,10 @@ impl DrawableObject for SubScreen {
     fn get_drawing_depth(&self) -> i8 {
         self.drwob_essential.drawing_depth
     }
+
+}
+
+impl DrawableObject for SubScreen {
 
     /// 描画開始地点を設定する
     fn set_position(&mut self, pos: numeric::Point2f) {
