@@ -37,3 +37,17 @@ pub type Vector3f = nalgebra::base::Vector3<f32>;
 pub type Vector3f64 = nalgebra::base::Vector3<f64>;
 
 pub type Rect = ggez::graphics::Rect;
+
+#[macro_export]
+macro_rules! zero_distance {
+    ($p: expr) => {
+        ($p.x.powf(2.0) + $p.y.powf(2.0)).sqrt()
+    };
+}
+
+#[macro_export]
+macro_rules! distance {
+    ($v1: expr, $v2: expr) => {
+        (($v1.x - $v2.x).powf(2.0) + ($v1.y - $v2.y).powf(2.0)).sqrt()
+    };
+}

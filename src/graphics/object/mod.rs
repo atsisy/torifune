@@ -1,3 +1,5 @@
+pub mod shape;
+
 use ggez::graphics as ggraphics;
 use ggez::*;
 use super::super::numeric;
@@ -52,8 +54,44 @@ pub trait TextureObject : DrawableObject {
     /// 実際に描画が行われる幅と高さを返す
     fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f;
 
+    /// テクスチャのサイズを返す
+    fn get_texture_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f;
+
     /// 現在のテクスチャを入れ替えるメソッド
     fn replace_texture(&mut self, texture: Rc<ggraphics::Image>);
+
+    // 色指定
+    fn set_color(&mut self, color: ggraphics::Color);
+
+    // 指定した色を取得
+    fn get_color(&mut self) -> ggraphics::Color;
+
+    /// 描画しているテクスチャの中央座標を返すメソッド
+    fn get_center(&self, ctx: &mut ggez::Context) -> numeric::Point2f {
+        let p = self.get_drawing_area(ctx);
+        numeric::Point2f::new(p.x + (p.w / 2.0), p.y + (p.h / 2.0))
+    }
+
+    /// 描画開始位置から、中心までのオフセットを返すメソッド
+    fn get_center_offset(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
+        let size = self.get_drawing_size(ctx);
+        numeric::Vector2f::new(size.x / 2.0, size.y / 2.0)
+    }
+    
+    // 中央座標の描画位置同士の距離を算出するメソッド
+    fn center_distance<T>(&self, ctx: &mut ggez::Context, obj: T) -> f32
+    where T: TextureObject {
+        let c1 = self.get_center(ctx);
+        let c2 = obj.get_center(ctx);
+
+        ((c1.x - c2.x).powf(2.0) + (c1.y - c2.y).powf(2.0)).sqrt()
+    }
+
+    #[inline(always)]
+    fn fit_scale(&mut self, ctx: &mut ggez::Context, size: numeric::Vector2f) {
+        let current_size = self.get_texture_size(ctx);
+        self.set_scale(numeric::Vector2f::new(size.x / current_size.x, size.y / current_size.y));
+    }
 }
 
 ///
@@ -356,8 +394,26 @@ impl TextureObject for MovableUniTexture {
             (self.texture.height() as f32) * scale.y)
     }
 
+    #[inline(always)]
+    fn get_texture_size(&self, _ctx: &mut ggez::Context) -> numeric::Vector2f {
+        numeric::Vector2f::new(
+            self.texture.width() as f32,
+            self.texture.height() as f32)
+    }
+
+    #[inline(always)]
     fn replace_texture(&mut self, texture: Rc<ggraphics::Image>) {
         self.texture = texture;
+    }
+
+    #[inline(always)]
+    fn set_color(&mut self, color: ggraphics::Color) {
+        self.draw_param.color = color;
+    }
+
+    #[inline(always)]
+    fn get_color(&mut self) -> ggraphics::Color {
+        self.draw_param.color
     }
 }
 
@@ -393,16 +449,20 @@ impl MovableObject for MovableUniTexture {
 /// ### scale
 /// フォントのスケール
 ///
+#[derive(Debug, Clone, Copy)]
 pub struct FontInformation {
-    font: ggraphics::Font,
-    scale: ggraphics::Scale,
+    pub font: ggraphics::Font,
+    pub scale: numeric::Vector2f,
+    pub color: ggraphics::Color,
 }
 
 impl FontInformation {
-    pub fn new(font: ggraphics::Font, scale: ggraphics::Scale) -> FontInformation {
+    pub fn new(font: ggraphics::Font, scale: numeric::Vector2f,
+               color: ggraphics::Color) -> FontInformation {
         FontInformation {
             font: font,
-            scale: scale
+            scale: scale,
+            color: color,
         }
     }
 }
@@ -470,14 +530,15 @@ impl MovableText {
 
     fn apply_font_information(&mut self) {
         self.text.set_font(self.font_info.font,
-                           self.font_info.scale);
+                           ggraphics::Scale { x: self.font_info.scale.x, y: self.font_info.scale.y });
+        self.draw_param.color = self.font_info.color;
     }
 
-    pub fn get_font_scale(&self) -> ggraphics::Scale {
+    pub fn get_font_scale(&self) -> numeric::Vector2f {
         self.font_info.scale
     }
 
-    pub fn set_font_scale(&mut self, scale: ggraphics::Scale) {
+    pub fn set_font_scale(&mut self, scale: numeric::Vector2f) {
         self.font_info.scale = scale;
         self.apply_font_information();
     }
@@ -486,7 +547,11 @@ impl MovableText {
         self.font_info.font = font;
         self.apply_font_information();
     }
-    
+
+    pub fn replace_text(&mut self, text: &str) {
+        self.text = ggraphics::Text::new(text.to_string());
+        self.apply_font_information();
+    }
 }
 
 impl DrawableComponent for MovableText {
@@ -624,8 +689,26 @@ impl TextureObject for MovableText {
     }
 
     #[inline(always)]
+    fn get_texture_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
+        numeric::Vector2f::new(
+            self.text.width(ctx) as f32,
+            self.text.height(ctx) as f32)
+    }
+
+    #[inline(always)]
     fn replace_texture(&mut self, _texture: Rc<ggraphics::Image>)
     {}
+
+    
+    #[inline(always)]
+    fn set_color(&mut self, color: ggraphics::Color) {
+        self.draw_param.color = color;
+    }
+
+    #[inline(always)]
+    fn get_color(&mut self) -> ggraphics::Color {
+        self.draw_param.color
+    }
 }
 
 impl HasBirthTime for MovableText {
@@ -806,9 +889,25 @@ impl<T: MovableObject + TextureObject> TextureObject for GenericEffectableObject
     }
 
     #[inline(always)]
+    fn get_texture_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
+        self.movable_object.get_texture_size(ctx)
+    }
+
+    #[inline(always)]
     fn replace_texture(&mut self, texture: Rc<ggraphics::Image>)
     {
         self.movable_object.replace_texture(texture);
+    }
+
+    
+    #[inline(always)]
+    fn set_color(&mut self, color: ggraphics::Color) {
+        self.movable_object.set_color(color);
+    }
+
+    #[inline(always)]
+    fn get_color(&mut self) -> ggraphics::Color {
+        self.movable_object.get_color()
     }
 }
 

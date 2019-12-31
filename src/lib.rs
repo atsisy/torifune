@@ -5,6 +5,7 @@ pub mod graphics;
 
 pub mod device;
 
+#[macro_use]
 pub mod numeric;
 
 
