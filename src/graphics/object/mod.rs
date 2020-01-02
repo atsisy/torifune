@@ -262,7 +262,7 @@ impl MovableUniTexture {
 }
 
 impl DrawableComponent for MovableUniTexture {
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         if self.drwob_essential.visible {
             ggraphics::draw(ctx, &*self.texture, self.draw_param)
         } else {
@@ -556,7 +556,7 @@ impl MovableText {
 
 impl DrawableComponent for MovableText {
     #[inline(always)]
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         if self.drwob_essential.visible {
             // textを描画する
             ggraphics::draw(ctx, &self.text, self.draw_param)
@@ -769,7 +769,7 @@ impl<T: MovableObject + TextureObject> GenericEffectableObject<T> {
 
 impl<T: MovableObject + TextureObject> DrawableComponent for GenericEffectableObject<T> {
     #[inline(always)]
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.movable_object.draw(ctx)
     }
 
@@ -956,3 +956,14 @@ impl<T: MovableObject + TextureObject> Effectable for GenericEffectableObject<T>
 pub type SimpleObject = GenericEffectableObject<MovableUniTexture>;
 pub type SimpleText = GenericEffectableObject<MovableText>;
 
+pub trait Clickable {
+    fn button_down(&mut self,
+                   _ctx: &mut ggez::Context,
+                   _button: ggez::input::mouse::MouseButton,
+                   _point: numeric::Point2f) {}
+    
+    fn button_up(&mut self,
+                 _ctx: &mut ggez::Context,
+                 _button: ggez::input::mouse::MouseButton,
+                 _point: numeric::Point2f) {}
+}
