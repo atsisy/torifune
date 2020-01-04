@@ -2,7 +2,6 @@ pub mod object;
 
 use std::rc::Rc;
 
-use ggez::graphics::GlBackendSpec;
 use ggez::graphics as ggraphics;
 use super::numeric;
 use std::cmp::Ordering;
@@ -113,103 +112,5 @@ impl DrawableObjectEssential {
             visible: visible,
             drawing_depth: depth
         }
-    }
-}
-
-pub struct SubScreen {
-    canvas: ggraphics::Canvas,
-    drwob_essential: DrawableObjectEssential,
-    draw_param: ggraphics::DrawParam,
-    size: numeric::Vector2f,
-    back_color: ggraphics::Color,
-    last_target: Rc<gfx::handle::RawRenderTargetView<<GlBackendSpec as ggez::graphics::BackendSpec>::Resources>>,
-    last_screen_coordinate: ggraphics::Rect,
-}
-
-impl SubScreen {
-    pub fn new(ctx: &mut ggez::Context, pos: ggraphics::Rect, depth: i8, back_color: ggraphics::Color) -> SubScreen {
-        let mut dparam = ggraphics::DrawParam::default();
-        let window_size = ggraphics::size(ctx);
-        dparam.dest = numeric::Point2f::new(pos.x, pos.y).into();
-        
-        SubScreen {
-            canvas: ggraphics::Canvas::new(ctx, pos.w as u16, pos.h as u16, ggez::conf::NumSamples::One).unwrap(),
-            drwob_essential: DrawableObjectEssential::new(true, depth),
-            draw_param: dparam,
-            size: numeric::Vector2f::new(pos.w, pos.h),
-            back_color: back_color,
-            last_target: ggraphics::get_render_target(ctx),
-            last_screen_coordinate: ggraphics::Rect::new(0.0, 0.0, window_size.0, window_size.1),
-        }
-    }
-
-    pub fn begin_drawing(&mut self, ctx: &mut ggez::Context) {
-
-        self.last_target = ggraphics::get_render_target(ctx);
-        self.last_screen_coordinate = ggraphics::screen_coordinates(ctx);
-        
-        ggraphics::set_canvas(ctx, Some(&self.canvas));
-        ggraphics::clear(ctx, self.back_color);
-        ggraphics::set_screen_coordinates(ctx, ggraphics::Rect::new(0.0, 0.0, self.size.x, self.size.y)).unwrap();
-    }
-
-    pub fn end_drawing(&self, ctx: &mut ggez::Context) {
-        ggraphics::set_render_target(ctx, self.last_target.clone());
-        ggraphics::set_screen_coordinates(ctx, ggraphics::Rect::new(0.0, 0.0,
-                                                                    self.last_screen_coordinate.w,
-                                                                    self.last_screen_coordinate.h)).unwrap();
-    }
-
-    pub fn relative_point(&self, abs_pos: numeric::Point2f) -> numeric::Point2f {
-        numeric::Point2f::new(abs_pos.x - self.draw_param.dest.x, abs_pos.y - self.draw_param.dest.y)
-    }
-}
-
-impl DrawableComponent for SubScreen {
-
-    fn draw(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult<()> {
-        ggraphics::draw(ctx, &self.canvas, self.draw_param)
-    }
-
-    fn hide(&mut self) {
-        self.drwob_essential.visible = false;
-    }
-
-    fn appear(&mut self) {
-        self.drwob_essential.visible = true;
-    }
-
-    fn is_visible(&self) -> bool {
-        self.drwob_essential.visible
-    }
-
-    /// 描画順序を設定する
-    fn set_drawing_depth(&mut self, depth: i8) {
-        self.drwob_essential.drawing_depth = depth;
-    }
-
-    /// 描画順序を返す
-    fn get_drawing_depth(&self) -> i8 {
-        self.drwob_essential.drawing_depth
-    }
-
-}
-
-impl DrawableObject for SubScreen {
-
-    /// 描画開始地点を設定する
-    fn set_position(&mut self, pos: numeric::Point2f) {
-        self.draw_param.dest = pos.into();
-    }
-
-    /// 描画開始地点を返す
-    fn get_position(&self) -> numeric::Point2f {
-        self.draw_param.dest.into()
-    }
-
-    /// offsetで指定しただけ描画位置を動かす
-    fn move_diff(&mut self, offset: numeric::Vector2f) {
-        self.draw_param.dest.x += offset.x;
-        self.draw_param.dest.y += offset.y;
     }
 }

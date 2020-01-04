@@ -6,6 +6,9 @@ use super::super::numeric;
 use crate::core::Clock;
 use super::{DrawableComponent, DrawableObject, DrawableObjectEssential};
 use std::rc::Rc;
+use std::cmp::Ordering;
+
+use ggez::graphics::GlBackendSpec;
 
 ///
 /// # テクスチャを利用して描画を行うために必要なインターフェイスを保証させるトレイト
@@ -77,15 +80,6 @@ pub trait TextureObject : DrawableObject {
         let size = self.get_drawing_size(ctx);
         numeric::Vector2f::new(size.x / 2.0, size.y / 2.0)
     }
-    
-    // 中央座標の描画位置同士の距離を算出するメソッド
-    fn center_distance<T>(&self, ctx: &mut ggez::Context, obj: T) -> f32
-    where T: TextureObject {
-        let c1 = self.get_center(ctx);
-        let c2 = obj.get_center(ctx);
-
-        ((c1.x - c2.x).powf(2.0) + (c1.y - c2.y).powf(2.0)).sqrt()
-    }
 
     #[inline(always)]
     fn fit_scale(&mut self, ctx: &mut ggez::Context, size: numeric::Vector2f) {
@@ -115,6 +109,25 @@ pub trait MovableObject : DrawableObject + HasBirthTime {
     fn override_move_func(&mut self,
                           move_fn: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
                           now: Clock);
+}
+
+
+///
+/// MovableObjectを深度（Z軸）でソートするための関数
+///
+/// この関数でソートすると、深度が深いものが先頭に来るようにソートされる
+///
+pub fn boxed_movable_object_sort_with_depth<T, U>(a: &Box<T>, b: &Box<U>) -> Ordering
+where T: MovableObject,
+      U: MovableObject {
+    let (ad, bd) = (a.get_drawing_depth(), b.get_drawing_depth());
+    if ad > bd {
+        Ordering::Less
+    } else if ad < bd {
+        Ordering::Greater
+    } else {
+        Ordering::Equal
+    }
 }
 
 ///
@@ -966,4 +979,206 @@ pub trait Clickable {
                  _ctx: &mut ggez::Context,
                  _button: ggez::input::mouse::MouseButton,
                  _point: numeric::Point2f) {}
+}
+
+
+pub struct SubScreen {
+    canvas: ggraphics::Canvas,
+    drwob_essential: DrawableObjectEssential,
+    draw_param: ggraphics::DrawParam,
+    size: numeric::Vector2f,
+    back_color: ggraphics::Color,
+    last_target: Rc<gfx::handle::RawRenderTargetView<<GlBackendSpec as ggez::graphics::BackendSpec>::Resources>>,
+    last_screen_coordinate: ggraphics::Rect,
+}
+
+impl SubScreen {
+    pub fn new(ctx: &mut ggez::Context, pos: ggraphics::Rect, depth: i8, back_color: ggraphics::Color) -> SubScreen {
+        let mut dparam = ggraphics::DrawParam::default();
+        let window_size = ggraphics::size(ctx);
+        dparam.dest = numeric::Point2f::new(pos.x, pos.y).into();
+        
+        SubScreen {
+            canvas: ggraphics::Canvas::new(ctx, pos.w as u16, pos.h as u16, ggez::conf::NumSamples::One).unwrap(),
+            drwob_essential: DrawableObjectEssential::new(true, depth),
+            draw_param: dparam,
+            size: numeric::Vector2f::new(pos.w, pos.h),
+            back_color: back_color,
+            last_target: ggraphics::get_render_target(ctx),
+            last_screen_coordinate: ggraphics::Rect::new(0.0, 0.0, window_size.0, window_size.1),
+        }
+    }
+
+    pub fn begin_drawing(&mut self, ctx: &mut ggez::Context) {
+
+        self.last_target = ggraphics::get_render_target(ctx);
+        self.last_screen_coordinate = ggraphics::screen_coordinates(ctx);
+        
+        ggraphics::set_canvas(ctx, Some(&self.canvas));
+        ggraphics::clear(ctx, self.back_color);
+        ggraphics::set_screen_coordinates(ctx, ggraphics::Rect::new(0.0, 0.0, self.size.x, self.size.y)).unwrap();
+    }
+
+    pub fn end_drawing(&self, ctx: &mut ggez::Context) {
+        ggraphics::set_render_target(ctx, self.last_target.clone());
+        ggraphics::set_screen_coordinates(ctx, ggraphics::Rect::new(0.0, 0.0,
+                                                                    self.last_screen_coordinate.w,
+                                                                    self.last_screen_coordinate.h)).unwrap();
+    }
+
+    pub fn relative_point(&self, abs_pos: numeric::Point2f) -> numeric::Point2f {
+        numeric::Point2f::new(abs_pos.x - self.draw_param.dest.x, abs_pos.y - self.draw_param.dest.y)
+    }
+}
+
+impl DrawableComponent for SubScreen {
+
+    fn draw(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult<()> {
+        ggraphics::draw(ctx, &self.canvas, self.draw_param)
+    }
+
+    fn hide(&mut self) {
+        self.drwob_essential.visible = false;
+    }
+
+    fn appear(&mut self) {
+        self.drwob_essential.visible = true;
+    }
+
+    fn is_visible(&self) -> bool {
+        self.drwob_essential.visible
+    }
+
+    /// 描画順序を設定する
+    fn set_drawing_depth(&mut self, depth: i8) {
+        self.drwob_essential.drawing_depth = depth;
+    }
+
+    /// 描画順序を返す
+    fn get_drawing_depth(&self) -> i8 {
+        self.drwob_essential.drawing_depth
+    }
+
+}
+
+impl DrawableObject for SubScreen {
+
+    /// 描画開始地点を設定する
+    fn set_position(&mut self, pos: numeric::Point2f) {
+        self.draw_param.dest = pos.into();
+    }
+
+    /// 描画開始地点を返す
+    fn get_position(&self) -> numeric::Point2f {
+        self.draw_param.dest.into()
+    }
+
+    /// offsetで指定しただけ描画位置を動かす
+    fn move_diff(&mut self, offset: numeric::Vector2f) {
+        self.draw_param.dest.x += offset.x;
+        self.draw_param.dest.y += offset.y;
+    }
+}
+
+impl TextureObject for SubScreen {
+    #[inline(always)]
+    fn set_scale(&mut self, scale: numeric::Vector2f) {
+        self.draw_param.scale = scale.into();
+    }
+
+    #[inline(always)]
+    fn get_scale(&self) -> numeric::Vector2f {
+        self.draw_param.scale.into()
+    }
+
+    #[inline(always)]
+    fn set_rotation(&mut self, rad: f32) {
+        self.draw_param.rotation = rad;
+    }
+
+    #[inline(always)]
+    fn get_rotation(&self) -> f32 {
+        self.draw_param.rotation
+    }
+
+    #[inline(always)]
+    fn set_crop(&mut self, crop: ggraphics::Rect) {
+        self.draw_param.src = crop;
+    }
+
+    #[inline(always)]
+    fn get_crop(&self) -> ggraphics::Rect {
+        self.draw_param.src
+    }
+
+    #[inline(always)]
+    fn set_drawing_color(&mut self, color: ggraphics::Color) {
+        self.draw_param.color = color;
+        self.back_color = color;
+    }
+
+    #[inline(always)]
+    fn get_drawing_color(&self) -> ggraphics::Color {
+        self.back_color
+    }
+
+    #[inline(always)]
+    fn set_alpha(&mut self, alpha: f32) {
+        self.draw_param.color.a = alpha;
+        self.back_color.a = alpha;
+    }
+
+    #[inline(always)]
+    fn get_alpha(&self) -> f32 {
+        self.draw_param.color.a
+    }
+
+    #[inline(always)]
+    fn set_transform_offset(&mut self, offset: numeric::Point2f) {
+        self.draw_param.offset = offset.into();
+    }
+
+    #[inline(always)]
+    fn get_transform_offset(&self) -> numeric::Point2f {
+        self.draw_param.offset.into()
+    }
+
+    #[inline(always)]
+    fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect {
+        let point = self.get_position();
+        let size = self.get_drawing_size(ctx);
+        ggraphics::Rect::new(
+            point.x, point.y,
+            size.x, size.y)
+    }
+
+    #[inline(always)]
+    fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
+        let scale = self.get_scale();
+        let size = self.get_texture_size(ctx);
+        numeric::Vector2f::new(
+            (size.x as f32) * scale.x,
+            (size.y as f32) * scale.y)
+    }
+
+    #[inline(always)]
+    fn get_texture_size(&self, _ctx: &mut ggez::Context) -> numeric::Vector2f {
+        numeric::Vector2f::new(
+            self.canvas.image().width() as f32,
+            self.canvas.image().height() as f32)
+    }
+
+    #[inline(always)]
+    fn replace_texture(&mut self, texture: Rc<ggraphics::Image>) {
+    }
+
+    #[inline(always)]
+    fn set_color(&mut self, color: ggraphics::Color) {
+        self.draw_param.color = color;
+    }
+
+    #[inline(always)]
+    fn get_color(&mut self) -> ggraphics::Color {
+        self.draw_param.color
+    }
 }
