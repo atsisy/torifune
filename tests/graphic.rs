@@ -8,13 +8,15 @@ use ggez::graphics as ggraphics;
 use torifune::core::Updatable;
 use torifune::graphics::object::*;
 use torifune::core::Clock;
+use torifune::numeric;
+use torifune::graphics::DrawableComponent;
 
-struct State<'a> {
+struct State {
     frames: usize,
-    text: SimpleText,
+    vertical_text: VerticalText,
     mouse: device::MouseListener,
     key: device::KeyboardListener,
-    image: tobj::SimpleObject<'a>,
+    image: tobj::SimpleObject,
 }
 
 fn sample_mouse_closure(msg: &'static str) -> Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>> {
@@ -32,30 +34,25 @@ fn sample_keyboard_closure(msg: &'static str) -> Box<dyn Fn(&ggez::Context, Cloc
     })
 }
 
-impl<'a> State<'a> {
-    fn new(ctx: &mut Context, image: tobj::SimpleObject<'a>) -> GameResult<State<'a>> {
+impl State {
+    fn new(ctx: &mut Context, image: tobj::SimpleObject) -> GameResult<State> {
         let font = graphics::Font::new(ctx, "/azuki.ttf")?;
 
 //        let mut raw_text = graphics::Text::new("Hello");
 //        raw_text.set_font(font, graphics::Scale {x: 48.0, y: 48.0});
 
-        let text = tobj::SimpleText::new(
-            MovableText::new(
-                "Hello".to_owned(),
-                torifune::numeric::Point2f::new(0.0, 0.0),
-                torifune::numeric::Vector2f::new(1.0, 1.0),
-                0.0,
-                0,
-                Box::new(move |p: & dyn MovableObject, t: Clock| {
-                    torifune::numeric::Point2f::new(p.get_position().x + 1.0, p.get_position().y)
-                }),
-                torifune::graphics::object::FontInformation::new(font, ggraphics::Scale{ x: 30.0, y: 30.0 }),
-                0),
-            vec![]);
         
         let mut s = State {
             frames: 0,
-            text: text,
+            vertical_text: torifune::graphics::object::VerticalText::new("これはテスト".to_string(),
+                                                                         numeric::Point2f::new(0.0, 0.0),
+                                                                         numeric::Vector2f::new(1.0, 1.0),
+                                                                         0.0,
+                                                                         0,
+                                                                         torifune::graphics::object::FontInformation::new(
+                                                                             font,
+                                                                             numeric::Vector2f::new(24.0, 24.0),
+                                                                             ggraphics::WHITE)),
             mouse: device::MouseListener::new(),
             key: device::KeyboardListener::new_masked(
                 vec![device::KeyInputDevice::GenericKeyboard],
@@ -114,14 +111,13 @@ impl<'a> State<'a> {
     }
 }
 
-impl<'a> ggez::event::EventHandler for State<'a> {
+impl ggez::event::EventHandler for State {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.mouse.update(ctx, 0);
         self.key.update(ctx, 0);
-        let p = self.mouse.get_last_clicked(MouseButton::Left);
-        println!("{}, {}", p.x, p.y);
+        let p = self.vertical_text.get_texture_size(ctx);
+        println!("size: {}, {}", p.x, p.y);
         self.image.move_with_func(0);
-        self.text.move_with_func(0);
         Ok(())
     }
     
@@ -129,9 +125,9 @@ impl<'a> ggez::event::EventHandler for State<'a> {
         graphics::clear(ctx, [0.0, 0.0, 0.0, 0.0].into());
 
         let offset = self.frames as f32 / 10.0;
-        self.text.draw(ctx)?;
         self.image.set_alpha(0.1);
         self.image.draw(ctx)?;
+        self.vertical_text.draw(ctx);
         graphics::present(ctx)?;
 
         self.frames += 1;
@@ -159,9 +155,9 @@ pub fn graphic_test() {
         .build()
         .unwrap();
 
-    let textures = vec![ggraphics::Image::new(ctx, "/ghost1.png").unwrap()];
+    let textures = vec![std::rc::Rc::new(ggraphics::Image::new(ctx, "/ghost1.png").unwrap())];
     let image = tobj::SimpleObject::new(
-        MovableUniTexture::new(&textures[0],
+        MovableUniTexture::new(textures[0].clone(),
                                torifune::numeric::Point2f::new(0.0, 0.0),
                                torifune::numeric::Vector2f::new(1.0, 1.0),
                                0.0,
@@ -175,4 +171,8 @@ pub fn graphic_test() {
     let state = &mut State::new(ctx, image).unwrap();
     state.init();
     event::run(ctx, event_loop, state).unwrap();
+}
+
+#[test]
+pub fn vertical_text() {
 }
