@@ -601,7 +601,10 @@ impl ProgramableKey for ProgramableGenericKey {
     fn real_to_virtual(&self, real: input::keyboard::KeyCode) -> VirtualKey {
         match self.key_map.get(&real) {
             Some(virt) => *virt,
-            None => panic!("Unknown real key"),
+            None => {
+                println!("Unknown real key");
+                VirtualKey::Unknown
+            }
         }
     }
 }

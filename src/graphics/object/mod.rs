@@ -969,6 +969,211 @@ impl<T: MovableObject + TextureObject> Effectable for GenericEffectableObject<T>
 pub type SimpleObject = GenericEffectableObject<MovableUniTexture>;
 pub type SimpleText = GenericEffectableObject<MovableText>;
 
+pub struct VerticalText {
+    drwob_essential: DrawableObjectEssential,
+    text: Vec<graphics::Text>,
+    font_info: FontInformation,
+    draw_param: ggraphics::DrawParam,
+}
+
+impl VerticalText {
+    pub fn new(text: String,
+               pos: numeric::Point2f,
+               scale: numeric::Vector2f,
+               rotation: f32,
+               drawing_depth: i8,
+               font_info: FontInformation) -> Self {
+        let mut param = ggraphics::DrawParam::new();
+        param.dest = pos.into();
+        param.scale = scale.into();
+        param.rotation = rotation;
+        param.color = font_info.color;
+        
+        let mut text_vec = Vec::new();
+        for ch in text.chars() {
+            let mut text_fragment = ggraphics::Text::new(ch);
+            text_fragment.set_font(font_info.font, ggraphics::Scale { x: font_info.scale.x, y: font_info.scale.y });
+            text_vec.push(text_fragment);
+        }
+        VerticalText {
+            drwob_essential: DrawableObjectEssential::new(true, drawing_depth),
+            text: text_vec,
+            font_info: font_info,
+            draw_param: param,
+        }
+    }
+}
+
+impl DrawableComponent for VerticalText {
+    #[inline(always)]
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        let mut param = self.draw_param;
+        if self.drwob_essential.visible {
+            for fragment in &self.text {
+                ggraphics::draw(ctx, fragment, param)?;
+                param.dest.y += self.font_info.scale.y;
+            }
+        }
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn hide(&mut self) {
+        self.drwob_essential.visible = false;
+    }
+
+    #[inline(always)]
+    fn appear(&mut self) {
+        self.drwob_essential.visible = true;
+    }
+
+    #[inline(always)]
+    fn is_visible(&self) -> bool {
+        self.drwob_essential.visible
+    }
+
+    #[inline(always)]
+    fn set_drawing_depth(&mut self, depth: i8) {
+        self.drwob_essential.drawing_depth = depth;
+    }
+
+    #[inline(always)]
+    fn get_drawing_depth(&self) -> i8 {
+        self.drwob_essential.drawing_depth
+    }
+}
+
+impl DrawableObject for VerticalText {
+
+    #[inline(always)]
+    fn set_position(&mut self, pos: numeric::Point2f) {
+        self.draw_param.dest = pos.into();
+    }
+
+    #[inline(always)]
+    fn get_position(&self) -> numeric::Point2f {
+        self.draw_param.dest.into()
+    }
+
+    #[inline(always)]
+    fn move_diff(&mut self, offset: numeric::Vector2f) {
+        self.draw_param.dest.x += offset.x;
+        self.draw_param.dest.y += offset.y;
+    }
+}
+
+
+impl TextureObject for VerticalText {
+    #[inline(always)]
+    fn set_scale(&mut self, scale: numeric::Vector2f) {
+        self.draw_param.scale = scale.into();
+    }
+
+    #[inline(always)]
+    fn get_scale(&self) -> numeric::Vector2f {
+        self.draw_param.scale.into()
+    }
+
+    #[inline(always)]
+    fn set_rotation(&mut self, rad: f32) {
+        self.draw_param.rotation = rad;
+    }
+
+    #[inline(always)]
+    fn get_rotation(&self) -> f32 {
+        self.draw_param.rotation
+    }
+
+    #[inline(always)]
+    fn set_crop(&mut self, crop: ggraphics::Rect) {
+        self.draw_param.src = crop;
+    }
+
+    #[inline(always)]
+    fn get_crop(&self) -> ggraphics::Rect {
+        self.draw_param.src
+    }
+
+    #[inline(always)]
+    fn set_drawing_color(&mut self, color: ggraphics::Color) {
+        self.draw_param.color = color;
+    }
+
+    #[inline(always)]
+    fn get_drawing_color(&self) -> ggraphics::Color {
+        self.draw_param.color
+    }
+
+    #[inline(always)]
+    fn set_alpha(&mut self, alpha: f32) {
+        self.draw_param.color.a = alpha;
+    }
+
+    #[inline(always)]
+    fn get_alpha(&self) -> f32 {
+        self.draw_param.color.a
+    }
+
+    #[inline(always)]
+    fn set_transform_offset(&mut self, offset: numeric::Point2f) {
+        self.draw_param.offset = offset.into();
+    }
+
+    #[inline(always)]
+    fn get_transform_offset(&self) -> numeric::Point2f {
+        self.draw_param.offset.into()
+    }
+
+    #[inline(always)]
+    fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect {
+        let point = self.get_position();
+        let scale = self.get_scale();
+        let size = self.get_drawing_size(ctx);
+        ggraphics::Rect::new(
+            point.x, point.y,
+            size.x, size.y)
+    }
+
+    #[inline(always)]
+    fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
+        let scale = self.get_scale();
+        let size = self.get_texture_size(ctx);
+        numeric::Vector2f::new(
+            size.x * scale.x,
+            size.y * scale.y)
+    }
+
+    #[inline(always)]
+    fn get_texture_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
+        let width = self.text
+            .iter()
+            .map(|fragment| fragment.width(ctx))
+            .fold(0, |max, value| value.max(max));
+        let height = self.text
+            .iter()
+            .map(|fragment| fragment.height(ctx))
+            .fold(0, |sum, value| sum + value);
+        numeric::Vector2f::new(
+            width as f32,
+            height as f32)
+    }
+
+    #[inline(always)]
+    fn replace_texture(&mut self, _texture: Rc<ggraphics::Image>)
+    {}
+
+    
+    #[inline(always)]
+    fn set_color(&mut self, color: ggraphics::Color) {
+        self.draw_param.color = color;
+    }
+
+    #[inline(always)]
+    fn get_color(&mut self) -> ggraphics::Color {
+        self.draw_param.color
+    }
+}
+
 pub trait Clickable {
     fn button_down(&mut self,
                    _ctx: &mut ggez::Context,
@@ -980,7 +1185,6 @@ pub trait Clickable {
                  _button: ggez::input::mouse::MouseButton,
                  _point: numeric::Point2f) {}
 }
-
 
 pub struct SubScreen {
     canvas: ggraphics::Canvas,
@@ -1028,6 +1232,12 @@ impl SubScreen {
 
     pub fn relative_point(&self, abs_pos: numeric::Point2f) -> numeric::Point2f {
         numeric::Point2f::new(abs_pos.x - self.draw_param.dest.x, abs_pos.y - self.draw_param.dest.y)
+    }
+
+    pub fn contains(&self, point: numeric::Point2f) -> bool {
+        let rect = numeric::Rect::new(self.draw_param.dest.x, self.draw_param.dest.y,
+                                          self.canvas.image().width() as f32, self.canvas.image().height() as f32);
+        rect.contains(point)
     }
 }
 
@@ -1169,7 +1379,7 @@ impl TextureObject for SubScreen {
     }
 
     #[inline(always)]
-    fn replace_texture(&mut self, texture: Rc<ggraphics::Image>) {
+    fn replace_texture(&mut self, _texture: Rc<ggraphics::Image>) {
     }
 
     #[inline(always)]
