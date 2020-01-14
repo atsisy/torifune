@@ -124,8 +124,14 @@ pub trait MovableObject : DrawableObject + HasBirthTime {
 
     // 従う関数を変更する
     fn override_move_func(&mut self,
-                          move_fn: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+                          move_fn: Option<Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>>,
                           now: Clock);
+
+    // 動作する関数が設定された時間を返す
+    fn mf_start_timing(&self) -> Clock;
+
+    // 現在停止しているかを返す
+    fn is_stop(&self) -> bool;
 }
 
 
@@ -181,14 +187,14 @@ pub trait HasGenericEffect : Effectable {
 /// 生成された時の初期位置
 ///
 pub struct MovableEssential {
-    move_func: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+    move_func: Option<Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>>,
     mf_set_time: Clock,
     init_position: numeric::Point2f,
 }
 
 impl MovableEssential {
     // MovableEssentialを生成する関数
-    pub fn new(f: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+    pub fn new(f: Option<Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>>,
            t: Clock, init_pos: numeric::Point2f) -> MovableEssential {
         MovableEssential {
             move_func: f,
@@ -197,7 +203,7 @@ impl MovableEssential {
         }
     }
 
-    pub fn clone(&self, f: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>) -> Self {
+    pub fn clone(&self, f: Option<Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>>) -> Self {
 	MovableEssential {
 	    move_func: f,
 	    mf_set_time: self.mf_set_time,
@@ -280,7 +286,7 @@ impl MovableUniTexture {
                scale: numeric::Vector2f,
                rotation: f32,
                drawing_depth: i8,
-               mf: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+               mf: Option<Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>>,
                now: Clock
     ) -> MovableUniTexture {
         let mut param = ggraphics::DrawParam::new();
@@ -448,15 +454,26 @@ impl MovableObject for MovableUniTexture {
 
     fn move_with_func(&mut self, t: Clock) {
         // クロージャにはselfと経過時間を与える
-        self.set_position((self.mv_essential.move_func)(self, t - self.mv_essential.mf_set_time));
+	let not_stop = self.mv_essential.move_func.is_some();
+	if not_stop {
+            self.set_position((self.mv_essential.move_func.as_ref().unwrap())(self, t - self.mv_essential.mf_set_time));
+	}
     }
 
     // 従う関数を変更する
     fn override_move_func(&mut self,
-                          move_fn: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+                          move_fn: Option<Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>>,
                           now: Clock) {
         self.mv_essential.move_func = move_fn;
         self.mv_essential.mf_set_time = now;
+    }
+
+    fn mf_start_timing(&self) -> Clock {
+	self.mv_essential.mf_set_time
+    }
+
+    fn is_stop(&self) -> bool {
+	self.mv_essential.move_func.is_none()
     }
 }
 
@@ -527,7 +544,7 @@ impl MovableText {
                scale: numeric::Vector2f,
                rotation: f32,
                drawing_depth: i8,
-               mf: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+               mf: Option<Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>>,
                font_info: FontInformation,
                now: Clock) -> MovableText {
 
@@ -726,15 +743,26 @@ impl MovableObject for MovableText {
 
     fn move_with_func(&mut self, t: Clock) {
         // クロージャにはselfと経過時間を与える
-        self.set_position((self.mv_essential.move_func)(self, t - self.mv_essential.mf_set_time));
+	let not_stop = self.mv_essential.move_func.is_some();
+	if not_stop {
+            self.set_position((self.mv_essential.move_func.as_ref().unwrap())(self, t - self.mv_essential.mf_set_time));
+	}
     }
 
     // 従う関数を変更する
     fn override_move_func(&mut self,
-                          move_fn: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+                          move_fn: Option<Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>>,
                           now: Clock) {
         self.mv_essential.move_func = move_fn;
         self.mv_essential.mf_set_time = now;
+    }
+
+    fn mf_start_timing(&self) -> Clock {
+	self.mv_essential.mf_set_time
+    }
+
+    fn is_stop(&self) -> bool {
+	self.mv_essential.move_func.is_none()
     }
 }
 
@@ -746,7 +774,7 @@ pub struct MovableWrap<T: ?Sized + TextureObject> {
 impl<T: ?Sized + TextureObject> MovableWrap<T> {
     // 生成関数
     pub fn new(texture_object: Box<T>,
-	       mf: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+	       mf: Option<Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>>,
 	       t: Clock) -> MovableWrap<T> {
 	let pos = texture_object.get_position();
         MovableWrap::<T> {
@@ -879,15 +907,26 @@ impl<T: ?Sized + TextureObject> HasBirthTime for MovableWrap<T> {
 
 impl<T: ?Sized + TextureObject> MovableObject for MovableWrap<T> {
     fn move_with_func(&mut self, t: Clock) {
-        self.set_position((self.mv_essential.move_func)(self, t - self.mv_essential.mf_set_time));
+	let not_stop = self.mv_essential.move_func.is_some();
+	if not_stop {
+            self.set_position((self.mv_essential.move_func.as_ref().unwrap())(self, t - self.mv_essential.mf_set_time));
+	}
     }
 
     // 従う関数を変更する
     fn override_move_func(&mut self,
-                          move_fn: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+                          move_fn: Option<Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>>,
                           now: Clock) {
         self.mv_essential.move_func = move_fn;
         self.mv_essential.mf_set_time = now;
+    }
+
+    fn mf_start_timing(&self) -> Clock {
+	self.mv_essential.mf_set_time
+    }
+
+    fn is_stop(&self) -> bool {
+	self.mv_essential.move_func.is_none()
     }
 }
 
@@ -905,16 +944,16 @@ impl<T: ?Sized + TextureObject> MovableObject for MovableWrap<T> {
 /// HasGenericEffectEssentialを実装するために必要なフィールド
 /// エフェクトのクロージャが含まれる
 ///
-pub struct GenericEffectableObject<T: MovableObject + TextureObject> {
+pub struct EffectableWrap<T: MovableObject + TextureObject> {
     movable_object: T,
     geffect_essential: HasGenericEffectEssential,
 }
 
-impl<T: MovableObject + TextureObject> GenericEffectableObject<T> {
+impl<T: MovableObject + TextureObject> EffectableWrap<T> {
     // 生成関数
     pub fn new(movable_object: T,
-               effects: Vec<Box<dyn Fn(&mut dyn MovableObject, &ggez::Context, Clock) -> ()>>) -> GenericEffectableObject<T> {
-        GenericEffectableObject::<T> {
+               effects: Vec<Box<dyn Fn(&mut dyn MovableObject, &ggez::Context, Clock) -> ()>>) -> EffectableWrap<T> {
+        EffectableWrap::<T> {
             movable_object: movable_object,
             geffect_essential: HasGenericEffectEssential::new(effects)
         }
@@ -925,7 +964,7 @@ impl<T: MovableObject + TextureObject> GenericEffectableObject<T> {
     }
 }
 
-impl<T: MovableObject + TextureObject> DrawableComponent for GenericEffectableObject<T> {
+impl<T: MovableObject + TextureObject> DrawableComponent for EffectableWrap<T> {
     #[inline(always)]
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.movable_object.draw(ctx)
@@ -958,7 +997,7 @@ impl<T: MovableObject + TextureObject> DrawableComponent for GenericEffectableOb
 
 }
 
-impl<T: MovableObject + TextureObject> DrawableObject for GenericEffectableObject<T> {
+impl<T: MovableObject + TextureObject> DrawableObject for EffectableWrap<T> {
     #[inline(always)]
     fn set_position(&mut self, pos: numeric::Point2f) {
         self.movable_object.set_position(pos)
@@ -975,7 +1014,7 @@ impl<T: MovableObject + TextureObject> DrawableObject for GenericEffectableObjec
     }
 }
 
-impl<T: MovableObject + TextureObject> TextureObject for GenericEffectableObject<T> {
+impl<T: MovableObject + TextureObject> TextureObject for EffectableWrap<T> {
     #[inline(always)]
     fn set_scale(&mut self, scale: numeric::Vector2f) {
         self.movable_object.set_scale(scale)
@@ -1069,14 +1108,14 @@ impl<T: MovableObject + TextureObject> TextureObject for GenericEffectableObject
     }
 }
 
-impl<T: MovableObject + TextureObject> HasBirthTime for GenericEffectableObject<T> {
+impl<T: MovableObject + TextureObject> HasBirthTime for EffectableWrap<T> {
     #[inline(always)]
     fn get_birth_time(&self) -> Clock {
         self.movable_object.get_birth_time()
     }
 }
 
-impl<T: MovableObject + TextureObject> MovableObject for GenericEffectableObject<T> {
+impl<T: MovableObject + TextureObject> MovableObject for EffectableWrap<T> {
 
     #[inline(always)]
     fn move_with_func(&mut self, t: Clock) {
@@ -1087,14 +1126,22 @@ impl<T: MovableObject + TextureObject> MovableObject for GenericEffectableObject
 
     // 従う関数を変更する
     fn override_move_func(&mut self,
-                          move_fn: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+                          move_fn: Option<Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>>,
                           now: Clock) {
         self.movable_object.override_move_func(move_fn, now)
+    }
+
+    fn mf_start_timing(&self) -> Clock {
+	self.movable_object.mf_start_timing()
+    }
+
+    fn is_stop(&self) -> bool {
+	self.movable_object.is_stop()
     }
 }
 
 
-impl<T: MovableObject + TextureObject> HasGenericEffect for GenericEffectableObject<T> {
+impl<T: MovableObject + TextureObject> HasGenericEffect for EffectableWrap<T> {
     // 新しくエフェクトを追加するメソッド
     fn add_effect(&mut self,
                   effect: Vec<Box<dyn Fn(&mut dyn MovableObject, &ggez::Context, Clock) -> ()>>) {
@@ -1102,7 +1149,7 @@ impl<T: MovableObject + TextureObject> HasGenericEffect for GenericEffectableObj
     }
 }
 
-impl<T: MovableObject + TextureObject> Effectable for GenericEffectableObject<T> {
+impl<T: MovableObject + TextureObject> Effectable for EffectableWrap<T> {
     // 新しくエフェクトを追加するメソッド
     fn effect(&mut self, ctx: &ggez::Context, t: Clock) {
         for f in &self.geffect_essential.effects_list {
@@ -1111,8 +1158,8 @@ impl<T: MovableObject + TextureObject> Effectable for GenericEffectableObject<T>
     }
 }
 
-pub type SimpleObject = GenericEffectableObject<MovableUniTexture>;
-pub type SimpleText = GenericEffectableObject<MovableText>;
+pub type SimpleObject = EffectableWrap<MovableUniTexture>;
+pub type SimpleText = EffectableWrap<MovableText>;
 
 pub struct VerticalText {
     drwob_essential: DrawableObjectEssential,
