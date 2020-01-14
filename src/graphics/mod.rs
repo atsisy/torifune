@@ -98,6 +98,7 @@ where T: DrawableObject,
 /// ### drawing_depth
 /// i8型
 ///
+#[derive(Clone)]
 pub struct DrawableObjectEssential {
     pub visible: bool,
     pub drawing_depth: i8,

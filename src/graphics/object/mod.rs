@@ -52,10 +52,22 @@ pub trait TextureObject : DrawableObject {
     fn get_transform_offset(&self) -> numeric::Point2f;
 
     /// 実際に描画が行われるエリアをRectで返す
-    fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect;
+    fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect {
+        let point = self.get_position();
+        let size = self.get_drawing_size(ctx);
+        ggraphics::Rect::new(
+            point.x, point.y,
+            size.x, size.y)
+    }
 
     /// 実際に描画が行われる幅と高さを返す
-    fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f;
+    fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
+        let scale = self.get_scale();
+        let size = self.get_texture_size(ctx);
+        numeric::Vector2f::new(
+            size.x * scale.x,
+            size.y * scale.y)
+    }
 
     /// テクスチャのサイズを返す
     fn get_texture_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f;
@@ -85,6 +97,11 @@ pub trait TextureObject : DrawableObject {
     fn fit_scale(&mut self, ctx: &mut ggez::Context, size: numeric::Vector2f) {
         let current_size = self.get_texture_size(ctx);
         self.set_scale(numeric::Vector2f::new(size.x / current_size.x, size.y / current_size.y));
+    }
+
+    #[inline(always)]
+    fn make_center(&mut self, ctx: &mut ggez::Context, center: numeric::Point2f) {
+	self.move_diff(center - self.get_center(ctx));
     }
 }
 
@@ -171,13 +188,21 @@ pub struct MovableEssential {
 
 impl MovableEssential {
     // MovableEssentialを生成する関数
-    fn new(f: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+    pub fn new(f: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
            t: Clock, init_pos: numeric::Point2f) -> MovableEssential {
         MovableEssential {
             move_func: f,
             mf_set_time: t,
             init_position: init_pos
         }
+    }
+
+    pub fn clone(&self, f: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>) -> Self {
+	MovableEssential {
+	    move_func: f,
+	    mf_set_time: self.mf_set_time,
+	    init_position: self.init_position,
+	}
     }
 }
 
@@ -388,23 +413,6 @@ impl TextureObject for MovableUniTexture {
     #[inline(always)]
     fn get_transform_offset(&self) -> numeric::Point2f {
         self.draw_param.offset.into()
-    }
-
-    #[inline(always)]
-    fn get_drawing_area(&self, _ctx: &mut ggez::Context) -> ggraphics::Rect {
-        let point = self.get_position();
-        let scale = self.get_scale();
-        ggraphics::Rect::new(
-            point.x, point.y,
-            (self.texture.width() as f32) * scale.x, (self.texture.height() as f32) * scale.y)
-    }
-
-    #[inline(always)]
-    fn get_drawing_size(&self, _ctx: &mut ggez::Context) -> numeric::Vector2f {
-        let scale = self.get_scale();
-        numeric::Vector2f::new(
-            (self.texture.width() as f32) * scale.x,
-            (self.texture.height() as f32) * scale.y)
     }
 
     #[inline(always)]
@@ -685,23 +693,6 @@ impl TextureObject for MovableText {
     }
 
     #[inline(always)]
-    fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect {
-        let point = self.get_position();
-        let scale = self.get_scale();
-        ggraphics::Rect::new(
-            point.x, point.y,
-            (self.text.width(ctx) as f32) * scale.x, (self.text.height(ctx) as f32) * scale.y)
-    }
-
-    #[inline(always)]
-    fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
-        let scale = self.get_scale();
-        numeric::Vector2f::new(
-            (self.text.width(ctx) as f32) * scale.x,
-            (self.text.height(ctx) as f32) * scale.y)
-    }
-
-    #[inline(always)]
     fn get_texture_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
         numeric::Vector2f::new(
             self.text.width(ctx) as f32,
@@ -746,6 +737,160 @@ impl MovableObject for MovableText {
         self.mv_essential.mf_set_time = now;
     }
 }
+
+pub struct MovableWrap<T: ?Sized + TextureObject> {
+    texture_object: Box<T>,
+    mv_essential: MovableEssential,
+}
+
+impl<T: ?Sized + TextureObject> MovableWrap<T> {
+    // 生成関数
+    pub fn new(texture_object: Box<T>,
+	       mf: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+	       t: Clock) -> MovableWrap<T> {
+	let pos = texture_object.get_position();
+        MovableWrap::<T> {
+	    texture_object: texture_object,
+	    mv_essential: MovableEssential::new(mf, t, pos),
+        }
+    }
+
+    pub fn ref_wrapped_object(&mut self) -> &mut T {
+        &mut self.texture_object
+    }
+}
+
+impl<T: ?Sized + TextureObject> DrawableComponent for MovableWrap<T> {
+
+    fn draw(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult<()> {
+	self.texture_object.draw(ctx)
+    }
+
+    fn hide(&mut self) {
+	self.texture_object.hide();
+    }
+
+    fn appear(&mut self) {
+	self.texture_object.appear();
+    }
+
+    fn is_visible(&self) -> bool {
+	self.texture_object.is_visible()
+    }
+
+    fn set_drawing_depth(&mut self, depth: i8) {
+	self.texture_object.set_drawing_depth(depth);
+    }
+
+    fn get_drawing_depth(&self) -> i8 {
+	self.texture_object.get_drawing_depth()
+    }
+    
+}
+
+impl<T: ?Sized + TextureObject> DrawableObject for MovableWrap<T> {
+    
+    fn set_position(&mut self, pos: numeric::Point2f) {
+	self.texture_object.set_position(pos);
+    }
+
+    fn get_position(&self) -> numeric::Point2f {
+	self.texture_object.get_position()
+    }
+
+    fn move_diff(&mut self, offset: numeric::Vector2f) {
+	self.texture_object.move_diff(offset);
+    }
+}
+
+impl<T: ?Sized + TextureObject> TextureObject for MovableWrap<T> {
+    
+    fn set_scale(&mut self, scale: numeric::Vector2f) {
+	self.texture_object.set_scale(scale);
+    }
+
+    fn get_scale(&self) -> numeric::Vector2f {
+	self.texture_object.get_scale()
+    }
+
+    fn set_rotation(&mut self, rad: f32) {
+	self.texture_object.set_rotation(rad);
+    }
+
+    fn get_rotation(&self) -> f32 {
+	self.texture_object.get_rotation()
+    }
+
+    fn set_crop(&mut self, crop: ggraphics::Rect) {
+	self.texture_object.set_crop(crop);
+    }
+
+    fn get_crop(&self) -> ggraphics::Rect {
+	self.texture_object.get_crop()
+    }
+
+    fn set_drawing_color(&mut self, color: ggraphics::Color) {
+	self.texture_object.set_drawing_color(color);
+    }
+
+    fn get_drawing_color(&self) -> ggraphics::Color {
+	self.texture_object.get_drawing_color()
+    }
+
+    fn set_alpha(&mut self, alpha: f32) {
+	self.texture_object.set_alpha(alpha);
+    }
+
+    fn get_alpha(&self) -> f32 {
+	self.texture_object.get_alpha()
+    }
+
+    fn set_transform_offset(&mut self, offset: numeric::Point2f) {
+	self.texture_object.set_transform_offset(offset);
+    }
+
+    fn get_transform_offset(&self) -> numeric::Point2f {
+	self.texture_object.get_transform_offset()
+    }
+
+    fn get_texture_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
+	self.texture_object.get_texture_size(ctx)
+    }
+
+    fn replace_texture(&mut self, texture: Rc<ggraphics::Image>) {
+	self.texture_object.replace_texture(texture);
+    }
+
+    fn set_color(&mut self, color: ggraphics::Color) {
+	self.texture_object.set_color(color);
+    }
+
+    fn get_color(&mut self) -> ggraphics::Color {
+	self.texture_object.get_color()
+    }
+
+}
+
+impl<T: ?Sized + TextureObject> HasBirthTime for MovableWrap<T> {
+    fn get_birth_time(&self) -> Clock {
+	self.mv_essential.mf_set_time
+    }
+}
+
+impl<T: ?Sized + TextureObject> MovableObject for MovableWrap<T> {
+    fn move_with_func(&mut self, t: Clock) {
+        self.set_position((self.mv_essential.move_func)(self, t - self.mv_essential.mf_set_time));
+    }
+
+    // 従う関数を変更する
+    fn override_move_func(&mut self,
+                          move_fn: Box<dyn Fn(& dyn MovableObject, Clock) -> numeric::Point2f>,
+                          now: Clock) {
+        self.mv_essential.move_func = move_fn;
+        self.mv_essential.mf_set_time = now;
+    }
+}
+
 
 ///
 /// # エフェクトを掛けるためのジェネリック構造体
@@ -974,6 +1119,7 @@ pub struct VerticalText {
     text: Vec<graphics::Text>,
     font_info: FontInformation,
     draw_param: ggraphics::DrawParam,
+    raw_text: String,
 }
 
 impl VerticalText {
@@ -1000,7 +1146,12 @@ impl VerticalText {
             text: text_vec,
             font_info: font_info,
             draw_param: param,
+            raw_text: text.to_string(),
         }
+    }
+
+    pub fn get_text(&self) -> &str {
+        &self.raw_text
     }
 }
 
@@ -1122,25 +1273,6 @@ impl TextureObject for VerticalText {
     #[inline(always)]
     fn get_transform_offset(&self) -> numeric::Point2f {
         self.draw_param.offset.into()
-    }
-
-    #[inline(always)]
-    fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect {
-        let point = self.get_position();
-        let scale = self.get_scale();
-        let size = self.get_drawing_size(ctx);
-        ggraphics::Rect::new(
-            point.x, point.y,
-            size.x, size.y)
-    }
-
-    #[inline(always)]
-    fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
-        let scale = self.get_scale();
-        let size = self.get_texture_size(ctx);
-        numeric::Vector2f::new(
-            size.x * scale.x,
-            size.y * scale.y)
     }
 
     #[inline(always)]
@@ -1351,24 +1483,6 @@ impl TextureObject for SubScreen {
     #[inline(always)]
     fn get_transform_offset(&self) -> numeric::Point2f {
         self.draw_param.offset.into()
-    }
-
-    #[inline(always)]
-    fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect {
-        let point = self.get_position();
-        let size = self.get_drawing_size(ctx);
-        ggraphics::Rect::new(
-            point.x, point.y,
-            size.x, size.y)
-    }
-
-    #[inline(always)]
-    fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
-        let scale = self.get_scale();
-        let size = self.get_texture_size(ctx);
-        numeric::Vector2f::new(
-            (size.x as f32) * scale.x,
-            (size.y as f32) * scale.y)
     }
 
     #[inline(always)]
