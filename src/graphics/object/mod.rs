@@ -786,6 +786,10 @@ impl<T: ?Sized + TextureObject> MovableWrap<T> {
     pub fn ref_wrapped_object(&mut self) -> &mut T {
         &mut self.texture_object
     }
+
+    pub fn move_wrapped_object(self) -> Box<T> {
+        self.texture_object
+    }
 }
 
 impl<T: ?Sized + TextureObject> DrawableComponent for MovableWrap<T> {
@@ -961,6 +965,10 @@ impl<T: MovableObject + TextureObject> EffectableWrap<T> {
 
     pub fn ref_wrapped_object(&mut self) -> &mut T {
         &mut self.movable_object
+    }
+
+    pub fn move_wrapped_object(self) -> Box<T> {
+        Box::new(self.movable_object)
     }
 }
 

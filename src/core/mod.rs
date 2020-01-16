@@ -15,7 +15,7 @@ macro_rules! hash {
 
 pub struct ScheduledEvent<Args> {
     run_time: Clock,
-    func: Box<dyn Fn(Args) -> Result<(), &'static str>>,
+    func: Box<dyn Fn(Args) -> ()>,
 }
 
 impl<Args> ScheduledEvent<Args> {
@@ -31,12 +31,11 @@ impl<Args> ScheduledEvent<Args> {
     ///         Ok(())
     ///     }, 10);
     /// ```
-    pub fn new<F>(func:&'static F, call_abs: Clock) -> ScheduledEvent<Args>
-    where F : Fn(Args) ->  Result<(), &'static str> {
-        ScheduledEvent { run_time: call_abs, func: Box::new(func) }
+    pub fn new(func: Box<dyn Fn(Args) ->  ()>, call_abs: Clock) -> ScheduledEvent<Args> {
+        ScheduledEvent { run_time: call_abs, func: func }
     }
 
-    pub fn call_event(&self, args: Args) -> Result<(), &'static str> {
+    pub fn call_event(&self, args: Args) {
         (self.func)(args)
     }
 
