@@ -105,6 +105,101 @@ pub trait TextureObject : DrawableObject {
     }
 }
 
+#[macro_export]
+macro_rules! impl_texture_object_for_wrapped {
+    ( $( $texture: tt ),* ) => {
+	#[inline(always)]
+	fn set_scale(&mut self, scale: numeric::Vector2f) {
+	    self.$($texture)*.set_scale(scale)
+	}
+	    
+	#[inline(always)]
+	fn get_scale(&self) -> numeric::Vector2f {
+	    self.$($texture)*.get_scale()
+	}
+	
+	#[inline(always)]
+	fn set_rotation(&mut self, rad: f32) {
+		self.$($texture)*.set_rotation(rad)
+	}
+	
+	#[inline(always)]
+	fn get_rotation(&self) -> f32 {
+	    self.$($texture)*.get_rotation()
+	}
+	
+	    #[inline(always)]
+	fn set_crop(&mut self, crop: ggraphics::Rect) {
+		self.$($texture)*.set_crop(crop);
+	}
+	    
+	#[inline(always)]
+	fn get_crop(&self) -> ggraphics::Rect {
+	    self.$($texture)*.get_crop()
+	}
+	
+	#[inline(always)]
+	fn set_drawing_color(&mut self, color: ggraphics::Color) {
+	    self.$($texture)*.set_drawing_color(color)
+	}
+	
+	#[inline(always)]
+	fn get_drawing_color(&self) -> ggraphics::Color {
+	    self.$($texture)*.get_drawing_color()
+	}
+	
+	#[inline(always)]
+	fn set_alpha(&mut self, alpha: f32) {
+	    self.$($texture)*.set_alpha(alpha);
+	}
+	
+	#[inline(always)]
+	fn get_alpha(&self) -> f32 {
+	    self.$($texture)*.get_alpha()
+	}
+	
+	#[inline(always)]
+	fn set_transform_offset(&mut self, offset: numeric::Point2f) {
+	    self.$($texture)*.set_transform_offset(offset);
+	}
+	
+	#[inline(always)]
+	fn get_transform_offset(&self) -> numeric::Point2f {
+	    self.$($texture)*.get_transform_offset()
+	}
+	
+	#[inline(always)]
+	fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect {
+	    self.$($texture)*.get_drawing_area(ctx)
+	}
+	
+	#[inline(always)]
+	fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
+	    self.$($texture)*.get_drawing_size(ctx)
+	}
+	
+	#[inline(always)]
+	fn get_texture_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
+	    self.$($texture)*.get_texture_size(ctx)
+	}
+	
+	#[inline(always)]
+	fn replace_texture(&mut self, texture: Rc<ggraphics::Image>) {
+	    self.$($texture)*.replace_texture(texture);
+	}
+	
+	#[inline(always)]
+	fn set_color(&mut self, color: ggraphics::Color) {
+	    self.$($texture)*.set_color(color);
+	}
+	
+	#[inline(always)]
+	fn get_color(&mut self) -> ggraphics::Color {
+	    self.$($texture)*.get_color()
+        }
+    };
+}
+
 ///
 /// # 生成された時刻を記憶していることを保証させるトレイト
 ///
@@ -228,6 +323,172 @@ impl HasGenericEffectEssential {
         }
     }
 }
+
+pub struct UniTexture {
+    drwob_essential: DrawableObjectEssential,
+    texture: Rc<ggraphics::Image>,
+    draw_param: ggraphics::DrawParam,
+}
+
+impl UniTexture {
+    pub fn new(texture: Rc<ggraphics::Image>,
+               pos: numeric::Point2f,
+               scale: numeric::Vector2f,
+               rotation: f32,
+               drawing_depth: i8,
+    ) -> UniTexture {
+        let mut param = ggraphics::DrawParam::new();
+        param.dest = pos.into();
+        param.scale = scale.into();
+        param.rotation = rotation;
+
+        UniTexture {
+            drwob_essential: DrawableObjectEssential::new(true, drawing_depth),
+            texture: texture,
+            draw_param: param,
+        }
+    }
+}
+
+impl DrawableComponent for UniTexture {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        if self.drwob_essential.visible {
+            ggraphics::draw(ctx, &*self.texture, self.draw_param)
+        } else {
+            Ok(())
+        }
+    }
+
+    #[inline(always)]
+    fn hide(&mut self) {
+        self.drwob_essential.visible = false;
+    }
+
+    #[inline(always)]
+    fn appear(&mut self) {
+        self.drwob_essential.visible = true;
+    }
+
+    #[inline(always)]
+    fn is_visible(&self) -> bool {
+        self.drwob_essential.visible
+    }
+
+    #[inline(always)]
+    fn set_drawing_depth(&mut self, depth: i8) {
+        self.drwob_essential.drawing_depth = depth;
+    }
+
+    #[inline(always)]
+    fn get_drawing_depth(&self) -> i8 {
+        self.drwob_essential.drawing_depth
+    }
+
+}
+
+impl DrawableObject for UniTexture {
+
+    #[inline(always)]
+    fn set_position(&mut self, pos: numeric::Point2f) {
+        self.draw_param.dest = pos.into();
+    }
+
+    #[inline(always)]
+    fn get_position(&self) -> numeric::Point2f {
+        self.draw_param.dest.into()
+    }
+
+    #[inline(always)]
+    fn move_diff(&mut self, offset: numeric::Vector2f) {
+        self.draw_param.dest.x += offset.x;
+        self.draw_param.dest.y += offset.y;
+    }
+}
+
+impl TextureObject for UniTexture {
+    #[inline(always)]
+    fn set_scale(&mut self, scale: numeric::Vector2f) {
+        self.draw_param.scale = scale.into();
+    }
+
+    #[inline(always)]
+    fn get_scale(&self) -> numeric::Vector2f {
+        self.draw_param.scale.into()
+    }
+
+    #[inline(always)]
+    fn set_rotation(&mut self, rad: f32) {
+        self.draw_param.rotation = rad;
+    }
+
+    #[inline(always)]
+    fn get_rotation(&self) -> f32 {
+        self.draw_param.rotation
+    }
+
+    #[inline(always)]
+    fn set_crop(&mut self, crop: ggraphics::Rect) {
+        self.draw_param.src = crop;
+    }
+
+    #[inline(always)]
+    fn get_crop(&self) -> ggraphics::Rect {
+        self.draw_param.src
+    }
+
+    #[inline(always)]
+    fn set_drawing_color(&mut self, color: ggraphics::Color) {
+        self.draw_param.color = color;
+    }
+
+    #[inline(always)]
+    fn get_drawing_color(&self) -> ggraphics::Color {
+        self.draw_param.color
+    }
+
+    #[inline(always)]
+    fn set_alpha(&mut self, alpha: f32) {
+        self.draw_param.color.a = alpha;
+    }
+
+    #[inline(always)]
+    fn get_alpha(&self) -> f32 {
+        self.draw_param.color.a
+    }
+
+    #[inline(always)]
+    fn set_transform_offset(&mut self, offset: numeric::Point2f) {
+        self.draw_param.offset = offset.into();
+    }
+
+    #[inline(always)]
+    fn get_transform_offset(&self) -> numeric::Point2f {
+        self.draw_param.offset.into()
+    }
+
+    #[inline(always)]
+    fn get_texture_size(&self, _ctx: &mut ggez::Context) -> numeric::Vector2f {
+        numeric::Vector2f::new(
+            self.texture.width() as f32,
+            self.texture.height() as f32)
+    }
+
+    #[inline(always)]
+    fn replace_texture(&mut self, texture: Rc<ggraphics::Image>) {
+        self.texture = texture;
+    }
+
+    #[inline(always)]
+    fn set_color(&mut self, color: ggraphics::Color) {
+        self.draw_param.color = color;
+    }
+
+    #[inline(always)]
+    fn get_color(&mut self) -> ggraphics::Color {
+        self.draw_param.color
+    }
+}
+
 
 ///
 /// # 一つのテクスチャを扱う描画可能オブジェクト
@@ -783,7 +1044,7 @@ impl<T: ?Sized + TextureObject> MovableWrap<T> {
         }
     }
 
-    pub fn ref_wrapped_object(&mut self) -> &mut T {
+    pub fn ref_wrapped_object(&mut self) -> &mut Box<T> {
         &mut self.texture_object
     }
 
@@ -836,71 +1097,7 @@ impl<T: ?Sized + TextureObject> DrawableObject for MovableWrap<T> {
 }
 
 impl<T: ?Sized + TextureObject> TextureObject for MovableWrap<T> {
-    
-    fn set_scale(&mut self, scale: numeric::Vector2f) {
-	self.texture_object.set_scale(scale);
-    }
-
-    fn get_scale(&self) -> numeric::Vector2f {
-	self.texture_object.get_scale()
-    }
-
-    fn set_rotation(&mut self, rad: f32) {
-	self.texture_object.set_rotation(rad);
-    }
-
-    fn get_rotation(&self) -> f32 {
-	self.texture_object.get_rotation()
-    }
-
-    fn set_crop(&mut self, crop: ggraphics::Rect) {
-	self.texture_object.set_crop(crop);
-    }
-
-    fn get_crop(&self) -> ggraphics::Rect {
-	self.texture_object.get_crop()
-    }
-
-    fn set_drawing_color(&mut self, color: ggraphics::Color) {
-	self.texture_object.set_drawing_color(color);
-    }
-
-    fn get_drawing_color(&self) -> ggraphics::Color {
-	self.texture_object.get_drawing_color()
-    }
-
-    fn set_alpha(&mut self, alpha: f32) {
-	self.texture_object.set_alpha(alpha);
-    }
-
-    fn get_alpha(&self) -> f32 {
-	self.texture_object.get_alpha()
-    }
-
-    fn set_transform_offset(&mut self, offset: numeric::Point2f) {
-	self.texture_object.set_transform_offset(offset);
-    }
-
-    fn get_transform_offset(&self) -> numeric::Point2f {
-	self.texture_object.get_transform_offset()
-    }
-
-    fn get_texture_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
-	self.texture_object.get_texture_size(ctx)
-    }
-
-    fn replace_texture(&mut self, texture: Rc<ggraphics::Image>) {
-	self.texture_object.replace_texture(texture);
-    }
-
-    fn set_color(&mut self, color: ggraphics::Color) {
-	self.texture_object.set_color(color);
-    }
-
-    fn get_color(&mut self) -> ggraphics::Color {
-	self.texture_object.get_color()
-    }
-
+    impl_texture_object_for_wrapped!{texture_object}
 }
 
 impl<T: ?Sized + TextureObject> HasBirthTime for MovableWrap<T> {
@@ -1023,97 +1220,7 @@ impl<T: MovableObject + TextureObject> DrawableObject for EffectableWrap<T> {
 }
 
 impl<T: MovableObject + TextureObject> TextureObject for EffectableWrap<T> {
-    #[inline(always)]
-    fn set_scale(&mut self, scale: numeric::Vector2f) {
-        self.movable_object.set_scale(scale)
-    }
-
-    #[inline(always)]
-    fn get_scale(&self) -> numeric::Vector2f {
-        self.movable_object.get_scale()
-    }
-
-    #[inline(always)]
-    fn set_rotation(&mut self, rad: f32) {
-        self.movable_object.set_rotation(rad)
-    }
-
-    #[inline(always)]
-    fn get_rotation(&self) -> f32 {
-        self.movable_object.get_rotation()
-    }
-
-    #[inline(always)]
-    fn set_crop(&mut self, crop: ggraphics::Rect) {
-        self.movable_object.set_crop(crop)
-    }
-
-    #[inline(always)]
-    fn get_crop(&self) -> ggraphics::Rect {
-        self.movable_object.get_crop()
-    }
-
-    #[inline(always)]
-    fn set_drawing_color(&mut self, color: ggraphics::Color) {
-        self.movable_object.set_drawing_color(color)
-    }
-
-    #[inline(always)]
-    fn get_drawing_color(&self) -> ggraphics::Color {
-        self.movable_object.get_drawing_color()
-    }
-
-    #[inline(always)]
-    fn set_alpha(&mut self, alpha: f32) {
-        self.movable_object.set_alpha(alpha)
-    }
-
-    #[inline(always)]
-    fn get_alpha(&self) -> f32 {
-        self.movable_object.get_alpha()
-    }
-
-    #[inline(always)]
-    fn set_transform_offset(&mut self, offset: numeric::Point2f) {
-        self.movable_object.set_transform_offset(offset)
-    }
-    
-    #[inline(always)]
-    fn get_transform_offset(&self) -> numeric::Point2f {
-        self.movable_object.get_transform_offset()
-    }
-
-    #[inline(always)]
-    fn get_drawing_area(&self, ctx: &mut ggez::Context) -> ggraphics::Rect {
-        self.movable_object.get_drawing_area(ctx)
-    }
-
-    #[inline(always)]
-    fn get_drawing_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
-        self.movable_object.get_drawing_size(ctx)
-    }
-
-    #[inline(always)]
-    fn get_texture_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
-        self.movable_object.get_texture_size(ctx)
-    }
-
-    #[inline(always)]
-    fn replace_texture(&mut self, texture: Rc<ggraphics::Image>)
-    {
-        self.movable_object.replace_texture(texture);
-    }
-
-    
-    #[inline(always)]
-    fn set_color(&mut self, color: ggraphics::Color) {
-        self.movable_object.set_color(color);
-    }
-
-    #[inline(always)]
-    fn get_color(&mut self) -> ggraphics::Color {
-        self.movable_object.get_color()
-    }
+    impl_texture_object_for_wrapped!{movable_object}
 }
 
 impl<T: MovableObject + TextureObject> HasBirthTime for EffectableWrap<T> {
@@ -1359,18 +1466,6 @@ impl TextureObject for VerticalText {
     fn get_color(&mut self) -> ggraphics::Color {
         self.draw_param.color
     }
-}
-
-pub trait Clickable {
-    fn button_down(&mut self,
-                   _ctx: &mut ggez::Context,
-                   _button: ggez::input::mouse::MouseButton,
-                   _point: numeric::Point2f) {}
-    
-    fn button_up(&mut self,
-                 _ctx: &mut ggez::Context,
-                 _button: ggez::input::mouse::MouseButton,
-                 _point: numeric::Point2f) {}
 }
 
 pub struct SubScreen {
