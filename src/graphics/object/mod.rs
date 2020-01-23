@@ -1315,6 +1315,17 @@ impl VerticalText {
     pub fn get_text(&self) -> &str {
         &self.raw_text
     }
+
+    pub fn replace_text(&mut self, text: String) {
+	let mut text_vec = Vec::new();
+        for ch in text.chars() {
+            let mut text_fragment = ggraphics::Text::new(ch);
+            text_fragment.set_font(self.font_info.font, ggraphics::Scale { x: self.font_info.scale.x, y: self.font_info.scale.y });
+            text_vec.push(text_fragment);
+        }
+	self.text = text_vec;
+	self.raw_text = text;
+    }
 }
 
 impl DrawableComponent for VerticalText {
@@ -1438,15 +1449,9 @@ impl TextureObject for VerticalText {
     }
 
     #[inline(always)]
-    fn get_texture_size(&self, ctx: &mut ggez::Context) -> numeric::Vector2f {
-        let width = self.text
-            .iter()
-            .map(|fragment| fragment.width(ctx))
-            .fold(0, |max, value| value.max(max));
-        let height = self.text
-            .iter()
-            .map(|fragment| fragment.height(ctx))
-            .fold(0, |sum, value| sum + value);
+    fn get_texture_size(&self, _: &mut ggez::Context) -> numeric::Vector2f {
+        let width = self.font_info.scale.x;
+        let height = self.text.len() as f32 * self.font_info.scale.y;
         numeric::Vector2f::new(
             width as f32,
             height as f32)
