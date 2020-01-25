@@ -120,7 +120,7 @@ macro_rules! impl_texture_object_for_wrapped {
 	
 	#[inline(always)]
 	fn set_rotation(&mut self, rad: f32) {
-		self.$($texture)*.set_rotation(rad)
+	    self.$($texture)*.set_rotation(rad)
 	}
 	
 	#[inline(always)]
@@ -128,9 +128,9 @@ macro_rules! impl_texture_object_for_wrapped {
 	    self.$($texture)*.get_rotation()
 	}
 	
-	    #[inline(always)]
+	#[inline(always)]
 	fn set_crop(&mut self, crop: ggraphics::Rect) {
-		self.$($texture)*.set_crop(crop);
+	    self.$($texture)*.set_crop(crop);
 	}
 	    
 	#[inline(always)]
@@ -212,7 +212,7 @@ pub trait HasBirthTime {
 ///
 /// # 任意の関数に従って座標を動かすことができることを保証するトレイト
 ///
-pub trait MovableObject : DrawableObject + HasBirthTime {
+pub trait MovableObject : TextureObject + HasBirthTime {
 
     // 任意の関数に従って、座標を動かす
     fn move_with_func(&mut self, t: Clock);
