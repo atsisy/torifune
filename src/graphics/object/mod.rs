@@ -256,6 +256,14 @@ pub trait Effectable {
     fn effect(&mut self, ctx: &ggez::Context, t: Clock);
 }
 
+#[derive(PartialEq, Clone, Copy)]
+pub enum EffectFnStatus {
+    EffectContinue,
+    EffectFinish,
+}
+
+pub type GenericEffectFn = Box<dyn Fn(&mut dyn MovableObject, &ggez::Context, Clock) -> EffectFnStatus>;
+
 ///
 /// # クロージャによって実装されるエフェクトに対応していることを保証させるトレイト
 /// Effectableを実装している必要がある
@@ -264,7 +272,9 @@ pub trait HasGenericEffect : Effectable {
     
     // 新しくエフェクトを追加するメソッド
     fn add_effect(&mut self,
-                  effect: Vec<Box<dyn Fn(&mut dyn MovableObject, &ggez::Context, Clock) -> ()>>);
+                  effect: Vec<GenericEffectFn>);
+
+    fn clear_effect(&mut self);
 }
 
 ///
@@ -313,11 +323,11 @@ impl MovableEssential {
 ///
 ///
 pub struct HasGenericEffectEssential {
-    effects_list: Vec<Box<dyn Fn(&mut dyn MovableObject, &ggez::Context, Clock) -> ()>>,
+    effects_list: Vec<GenericEffectFn>,
 }
 
 impl HasGenericEffectEssential {
-    fn new(list: Vec<Box<dyn Fn(&mut dyn MovableObject, &ggez::Context, Clock) -> ()>>) -> HasGenericEffectEssential {
+    fn new(list: Vec<GenericEffectFn>) -> HasGenericEffectEssential {
         HasGenericEffectEssential {
             effects_list: list
         }
@@ -1153,7 +1163,7 @@ pub struct EffectableWrap<T: MovableObject + TextureObject> {
 impl<T: MovableObject + TextureObject> EffectableWrap<T> {
     // 生成関数
     pub fn new(movable_object: T,
-               effects: Vec<Box<dyn Fn(&mut dyn MovableObject, &ggez::Context, Clock) -> ()>>) -> EffectableWrap<T> {
+               effects: Vec<GenericEffectFn>) -> EffectableWrap<T> {
         EffectableWrap::<T> {
             movable_object: movable_object,
             geffect_essential: HasGenericEffectEssential::new(effects)
@@ -1259,8 +1269,12 @@ impl<T: MovableObject + TextureObject> MovableObject for EffectableWrap<T> {
 impl<T: MovableObject + TextureObject> HasGenericEffect for EffectableWrap<T> {
     // 新しくエフェクトを追加するメソッド
     fn add_effect(&mut self,
-                  effect: Vec<Box<dyn Fn(&mut dyn MovableObject, &ggez::Context, Clock) -> ()>>) {
+                  effect: Vec<GenericEffectFn>) {
         self.geffect_essential.effects_list.extend(effect)
+    }
+
+    fn clear_effect(&mut self) {
+	self.geffect_essential.effects_list.clear();
     }
 }
 
@@ -1270,6 +1284,9 @@ impl<T: MovableObject + TextureObject> Effectable for EffectableWrap<T> {
         for f in &self.geffect_essential.effects_list {
             (f)(&mut self.movable_object, ctx, t);
         }
+	
+	let borrowed_movable = &mut self.movable_object;
+	self.geffect_essential.effects_list.retain(|f| (f)(borrowed_movable, ctx, t) != EffectFnStatus::EffectFinish);
     }
 }
 
