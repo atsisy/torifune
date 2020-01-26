@@ -105,6 +105,28 @@ pub trait TextureObject : DrawableObject {
     }
 }
 
+
+#[macro_export]
+macro_rules! impl_drawable_object_for_wrapped {
+    ( $( $texture: tt ),* ) => {
+	#[inline(always)]
+	fn set_position(&mut self, pos: numeric::Point2f) {
+            self.$($texture)*.set_position(pos);
+	}
+
+	#[inline(always)]
+	fn get_position(&self) -> numeric::Point2f {
+            self.$($texture)*.get_position()
+	}
+
+	#[inline(always)]
+	fn move_diff(&mut self, offset: numeric::Vector2f) {
+            self.$($texture)*.move_diff(offset)
+	}
+    };
+}
+
+
 #[macro_export]
 macro_rules! impl_texture_object_for_wrapped {
     ( $( $texture: tt ),* ) => {
