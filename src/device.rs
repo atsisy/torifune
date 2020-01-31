@@ -608,5 +608,3 @@ impl ProgramableKey for ProgramableGenericKey {
         }
     }
 }
-
-
