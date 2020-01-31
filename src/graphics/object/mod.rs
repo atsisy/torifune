@@ -878,6 +878,10 @@ impl MovableText {
         self.font_info.font = font;
         self.apply_font_information();
     }
+    
+    pub fn get_text(&self) -> String {
+	self.text.contents()
+    }
 
     pub fn replace_text(&mut self, text: &str) {
         self.text = ggraphics::Text::new(text.to_string());
@@ -1076,7 +1080,11 @@ impl<T: ?Sized + TextureObject> MovableWrap<T> {
         }
     }
 
-    pub fn ref_wrapped_object(&mut self) -> &mut Box<T> {
+    pub fn ref_wrapped_object(&self) -> &Box<T> {
+        &self.texture_object
+    }
+    
+    pub fn ref_wrapped_object_mut(&mut self) -> &mut Box<T> {
         &mut self.texture_object
     }
 
@@ -1192,7 +1200,11 @@ impl<T: MovableObject + TextureObject> EffectableWrap<T> {
         }
     }
 
-    pub fn ref_wrapped_object(&mut self) -> &mut T {
+    pub fn ref_wrapped_object(&self) -> &T {
+        &self.movable_object
+    }
+    
+    pub fn ref_wrapped_object_mut(&mut self) -> &mut T {
         &mut self.movable_object
     }
 
