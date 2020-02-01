@@ -1,5 +1,4 @@
 pub mod object;
-pub mod draw;
 
 use ggez::graphics as ggraphics;
 use super::numeric;
