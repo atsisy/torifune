@@ -6,6 +6,19 @@ use ggez::graphics as ggraphics;
 use crate::graphics::*;
 use crate::graphics::object::*;
 
+///
+/// 描画対象のスタッキングを行うための構造体
+///
+/// Example
+///
+/// ```
+/// sub_screen::stack_screen(ctx, &sub_screen);
+///
+/// // SubScreenへ描画処理
+///
+/// sub_screen::pop_screen(ctx);
+/// self.canvas.draw(ctx).unwrap();
+/// ```
 #[derive(Clone)]
 pub struct SubScreen {
     canvas: Rc<ggraphics::Canvas>,
