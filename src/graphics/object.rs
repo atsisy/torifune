@@ -1382,10 +1382,19 @@ impl DrawableComponent for VerticalText {
     #[inline(always)]
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let mut param = self.draw_param;
+	let mut height = self.raw_text.len() as f32 * self.font_info.scale.y * param.src.h;
+	
         if self.drwob_essential.visible {
             for fragment in &self.text {
+		if height < self.font_info.scale.y {
+		    param.src.h = height / self.font_info.scale.y;
+		    ggraphics::draw(ctx, fragment, param)?;
+		    break;
+		}
+		
                 ggraphics::draw(ctx, fragment, param)?;
                 param.dest.y += self.font_info.scale.y;
+		height -= self.font_info.scale.y;
             }
         }
         Ok(())
