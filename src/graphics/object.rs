@@ -1387,8 +1387,6 @@ impl DrawableComponent for VerticalText {
         if self.drwob_essential.visible {
             for fragment in &self.text {
 		if height < self.font_info.scale.y {
-		    param.src.h = height / self.font_info.scale.y;
-		    ggraphics::draw(ctx, fragment, param)?;
 		    break;
 		}
 		

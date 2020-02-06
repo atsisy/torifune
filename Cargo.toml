@@ -8,9 +8,4 @@ edition = "2018"
 
 [dependencies]
 nalgebra = "0.18.1"
-gfx = "0.18.2"
-gfx_core = "0.9.2"
-gfx_device_gl = "0.16.2"
-
-[dependencies.ggez]
-path = "../ggez"
+ggez = "0.5.1"

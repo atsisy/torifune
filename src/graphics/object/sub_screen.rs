@@ -48,7 +48,7 @@ impl SubScreen {
 
     pub fn contains(&self, point: numeric::Point2f) -> bool {
         let rect = numeric::Rect::new(self.draw_param.dest.x, self.draw_param.dest.y,
-                                          self.canvas.image().width() as f32, self.canvas.image().height() as f32);
+                                      self.canvas.image().width() as f32, self.canvas.image().height() as f32);
         rect.contains(point)
     }
 }
