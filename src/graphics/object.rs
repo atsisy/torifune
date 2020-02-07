@@ -1381,8 +1381,9 @@ impl VerticalText {
 impl DrawableComponent for VerticalText {
     #[inline(always)]
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let mut param = self.draw_param;
-	let mut height = self.raw_text.len() as f32 * self.font_info.scale.y * param.src.h;
+	let mut height = self.raw_text.len() as f32 * self.font_info.scale.y * self.draw_param.src.h;
+	let color = Some(self.draw_param.color);
+	let mut pos = numeric::Point2f::new(0.0, 0.0);
 	
         if self.drwob_essential.visible {
             for fragment in &self.text {
@@ -1390,11 +1391,15 @@ impl DrawableComponent for VerticalText {
 		    break;
 		}
 		
-                ggraphics::draw(ctx, fragment, param)?;
-                param.dest.y += self.font_info.scale.y;
+		ggraphics::queue_text(ctx, fragment, pos, color);
+		
 		height -= self.font_info.scale.y;
+		pos.y += self.font_info.scale.y;
             }
+
+	    ggraphics::draw_queued_text(ctx, self.draw_param, None, ggraphics::FilterMode::Linear)?;
         }
+	
         Ok(())
     }
 

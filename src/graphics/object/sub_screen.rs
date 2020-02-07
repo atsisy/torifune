@@ -56,7 +56,10 @@ impl SubScreen {
 impl DrawableComponent for SubScreen {
 
     fn draw(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult<()> {
-        ggraphics::draw(ctx, self.canvas.as_ref(), self.draw_param)
+	let mut param = self.draw_param;
+	param.dest.x = param.dest.x.round();
+	param.dest.y = param.dest.y.round();
+        ggraphics::draw(ctx, self.canvas.as_ref(), param)
     }
 
     fn hide(&mut self) {
