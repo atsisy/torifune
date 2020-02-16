@@ -210,7 +210,7 @@ fn setup_poped_drawing_target(ctx: &mut ggez::Context, screen: &SubScreen) {
 }
 
 fn make_none_draw_target(ctx: &mut ggez::Context) {
-    let window_size = ggraphics::size(ctx);
+    let window_size = ggraphics::drawable_size(ctx);
     reset_stacking_screen(None);
     ggraphics::set_canvas(ctx, None);
     ggraphics::set_screen_coordinates(ctx, ggraphics::Rect::new(0.0, 0.0, window_size.0, window_size.1)).unwrap();
@@ -233,7 +233,7 @@ pub fn reset_stacking_screen(new_screen: Option<&SubScreen>) -> Option<SubScreen
 ///
 /// 現在の描画対象を変更し、変更前の描画対象を内部スタックに積む
 ///
-pub fn stack_screen(ctx: &mut ggez::Context, new_screen: &SubScreen) {
+pub fn stack_screen(ctx: &mut ggez::Context, new_screen: &SubScreen) -> usize {
     // 描画対象変更の準備
     setup_new_drawing_target(ctx, &new_screen);
 
@@ -245,26 +245,30 @@ pub fn stack_screen(ctx: &mut ggez::Context, new_screen: &SubScreen) {
 	if let Some(last_screen) = last_screen {
 	    stack.borrow_mut().push(last_screen);
 	}
-    });
+
+	stack.borrow().len()
+    })
 }
 
 ///
 /// 内部スタックから描画対象を取り出し、現在の描画対象を変更する
 /// スタックが空の場合、描画対象がウィンドウになる
 ///
-pub fn pop_screen(ctx: &mut ggez::Context) -> Option<SubScreen> {
+pub fn pop_screen(ctx: &mut ggez::Context) -> (usize, Option<SubScreen>) {
     // スタックから描画対象を取り出す
-    let last_cur_screen = SCREEN_STACK.with(|stack| {
-	stack.borrow_mut().pop()
+    let (stack_len, last_cur_screen) = SCREEN_STACK.with(|stack| {
+	let stack_len = stack.borrow().len();
+	(stack_len, stack.borrow_mut().pop())
     });
 
     // 取り出した描画対象がNoneでなければ、それを描画対象とし、
     // Noneならウィンドウを描画対象にする
-    if last_cur_screen.is_some() {
-	setup_poped_drawing_target(ctx, last_cur_screen.as_ref().unwrap());
-	reset_stacking_screen(last_cur_screen.as_ref())
-    } else {
-	make_none_draw_target(ctx);
-	None
-    }
+    (stack_len,
+     if last_cur_screen.is_some() {
+	 setup_poped_drawing_target(ctx, last_cur_screen.as_ref().unwrap());
+	 reset_stacking_screen(last_cur_screen.as_ref())
+     } else {
+	 make_none_draw_target(ctx);
+	 None
+     })
 }
