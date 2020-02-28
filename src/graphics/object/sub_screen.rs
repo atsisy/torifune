@@ -51,6 +51,10 @@ impl SubScreen {
                                       self.canvas.image().width() as f32, self.canvas.image().height() as f32);
         rect.contains(point)
     }
+
+    pub fn set_filter(&mut self, mode: ggraphics::FilterMode) {
+	Rc::get_mut(&mut self.canvas).unwrap().set_filter(mode);
+    }
 }
 
 impl DrawableComponent for SubScreen {
