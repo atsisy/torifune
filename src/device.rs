@@ -9,7 +9,7 @@ use super::numeric;
 
 ///
 /// # マウスのボタンの状態
-// マウスのボタンの状態を表す
+/// マウスのボタンの状態を表す
 ///
 /// MousePressed: 押されている
 /// MouseReleased: 離されている

@@ -1,8 +1,12 @@
 pub mod object;
 
-use ggez::graphics as ggraphics;
-use super::numeric;
 use std::cmp::Ordering;
+
+use ggez::graphics as ggraphics;
+use ggez::input::mouse::MouseButton;
+
+use super::device::*;
+use super::numeric;
 
 pub type Texture = ggraphics::Image;
 
@@ -28,7 +32,17 @@ pub trait DrawableComponent {
 
     /// 描画順序を返す
     fn get_drawing_depth(&self) -> i8;
-    
+
+    /// キー入力時の動作
+    fn virtual_key_event(&mut self, _ctx: &mut ggez::Context, _event_type: KeyboardEvent, _vkey: VirtualKey) {
+	// Nothing
+    }
+
+    /// マウスイベント時の動作
+    fn mouse_button_event(&mut self, _ctx: &mut ggez::Context, _event_type: MouseButtonEvent,
+			  _button: MouseButton, _point: numeric::Point2f) {
+	// Nothing
+    }
 }
 
 ///

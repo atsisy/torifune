@@ -1,5 +1,6 @@
 pub mod shape;
 pub mod sub_screen;
+pub mod menu;
 
 use ggez::graphics as ggraphics;
 use ggez::*;
@@ -1353,6 +1354,7 @@ impl VerticalText {
             text_fragment.set_font(font_info.font, ggraphics::Scale { x: font_info.scale.x, y: font_info.scale.y });
             text_vec.push(text_fragment);
         }
+	
         VerticalText {
             drwob_essential: DrawableObjectEssential::new(true, drawing_depth),
             text: text_vec,
@@ -1364,6 +1366,10 @@ impl VerticalText {
 
     pub fn get_text(&self) -> &str {
         &self.raw_text
+    }
+
+    pub fn len(&self) -> usize {
+	self.text.len()
     }
 
     pub fn replace_text(&mut self, text: String) {
@@ -1387,6 +1393,12 @@ impl DrawableComponent for VerticalText {
 	
         if self.drwob_essential.visible {
             for fragment in &self.text {
+		if fragment.contents().eq("\n") {
+		    pos.x -= self.font_info.scale.x;
+		    pos.y = 0.0;
+		    continue;
+		}
+		
 		if height < self.font_info.scale.y {
 		    break;
 		}
@@ -1512,8 +1524,31 @@ impl TextureObject for VerticalText {
 
     #[inline(always)]
     fn get_texture_size(&self, _: &mut ggez::Context) -> numeric::Vector2f {
-        let width = self.font_info.scale.x;
-        let height = self.text.len() as f32 * self.font_info.scale.y;
+        let width = self.font_info.scale.x * self.text
+	    .iter()
+	    .fold(1.0, |sum, text| sum + if text.contents().eq("\n") { 1.0 } else { 0.0 } );
+
+	let mut max_chars_num = 0;
+	let mut tmp_chars_num = 0;
+	for text in &self.text {
+	    if text.contents().eq("\n") {
+		if max_chars_num < tmp_chars_num {
+		    max_chars_num = tmp_chars_num;
+		    tmp_chars_num = 0;
+		}
+
+		continue;
+	    }
+
+	    tmp_chars_num += 1;
+	}
+
+	if max_chars_num == 0 {
+	    max_chars_num = self.text.len();
+	}
+	
+        let height = self.font_info.scale.y * (max_chars_num as f32);
+	
         numeric::Vector2f::new(
             width as f32,
             height as f32)
