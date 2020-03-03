@@ -1382,6 +1382,12 @@ impl VerticalText {
 	self.text = text_vec;
 	self.raw_text = text;
     }
+
+    pub fn get_indent_num(&self) -> usize {
+	self.text
+	    .iter()
+	    .fold(0, |sum, text| sum + if text.contents().eq("\n") { 1 } else { 0 } )
+    }
 }
 
 impl DrawableComponent for VerticalText {
@@ -1389,7 +1395,7 @@ impl DrawableComponent for VerticalText {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
 	let mut height = self.raw_text.len() as f32 * self.font_info.scale.y * self.draw_param.src.h;
 	let color = Some(self.draw_param.color);
-	let mut pos = numeric::Point2f::new(0.0, 0.0);
+	let mut pos = numeric::Point2f::new(self.get_indent_num() as f32 * self.font_info.scale.x, 0.0);
 	
         if self.drwob_essential.visible {
             for fragment in &self.text {
@@ -1524,9 +1530,7 @@ impl TextureObject for VerticalText {
 
     #[inline(always)]
     fn get_texture_size(&self, _: &mut ggez::Context) -> numeric::Vector2f {
-        let width = self.font_info.scale.x * self.text
-	    .iter()
-	    .fold(1.0, |sum, text| sum + if text.contents().eq("\n") { 1.0 } else { 0.0 } );
+        let width = self.font_info.scale.x * ((self.get_indent_num() + 1) as f32);
 
 	let mut max_chars_num = 0;
 	let mut tmp_chars_num = 0;
@@ -1534,17 +1538,17 @@ impl TextureObject for VerticalText {
 	    if text.contents().eq("\n") {
 		if max_chars_num < tmp_chars_num {
 		    max_chars_num = tmp_chars_num;
-		    tmp_chars_num = 0;
 		}
 
+		tmp_chars_num = 0;
 		continue;
 	    }
-
+	    
 	    tmp_chars_num += 1;
 	}
-
-	if max_chars_num == 0 {
-	    max_chars_num = self.text.len();
+	
+	if max_chars_num < tmp_chars_num {
+	    max_chars_num = tmp_chars_num;
 	}
 	
         let height = self.font_info.scale.y * (max_chars_num as f32);
