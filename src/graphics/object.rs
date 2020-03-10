@@ -103,6 +103,12 @@ pub trait TextureObject : DrawableObject {
     fn make_center(&mut self, ctx: &mut ggez::Context, center: numeric::Point2f) {
 	self.move_diff(center - self.get_center(ctx));
     }
+
+    #[inline(always)]
+    fn contains(&mut self, ctx: &mut ggez::Context, point: numeric::Point2f) -> bool {
+	self.get_drawing_area(ctx)
+	    .contains(point)
+    }
 }
 
 

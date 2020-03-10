@@ -288,7 +288,7 @@ pub enum KeyStatus {
 impl KeyStatus {
     
     #[inline(always)]
-    fn positive_logic(b: bool) -> KeyStatus {
+    pub fn positive_logic(b: bool) -> KeyStatus {
         if b {
             KeyStatus::Pressed
         } else {
@@ -297,7 +297,7 @@ impl KeyStatus {
     }
 
     #[inline(always)]
-    fn negative_logic(b: bool) -> KeyStatus {
+    pub fn negative_logic(b: bool) -> KeyStatus {
         if b {
             KeyStatus::Released
         } else {
