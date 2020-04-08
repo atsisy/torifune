@@ -318,7 +318,7 @@ impl KeyStatus {
 /// KeepReleased: 離され続けている（離された状態から離された状態になった）
 /// Unknown: 不明
 ///
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
 pub enum KeyboardEvent {
     Typed,
     FirstPressed,

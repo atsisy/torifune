@@ -51,3 +51,10 @@ macro_rules! distance {
         (($v1.x - $v2.x).powf(2.0) + ($v1.y - $v2.y).powf(2.0)).sqrt()
     };
 }
+
+#[macro_export]
+macro_rules! roundup2f {
+    ($v1: expr) => {
+	torifune::numeric::Point2f::new($v1.x.round(), $v1.y.round())
+    };
+}
