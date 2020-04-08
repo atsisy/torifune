@@ -1,6 +1,7 @@
 use ggez::graphics as ggraphics;
 
 use super::super::numeric;
+use super::super::{DrawableComponent, DrawableObjectEssential};
 
 pub trait MeshShape {
     fn add_to_builder<'a>(&self, builder: &'a mut ggraphics::MeshBuilder) -> &'a mut ggraphics::MeshBuilder;
@@ -13,7 +14,6 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
-
     pub fn new(bounds: numeric::Rect, mode: ggraphics::DrawMode, color: ggraphics::Color) -> Self {
         Rectangle {
             bounds: bounds,
@@ -261,4 +261,77 @@ pub enum Shape {
     Circle(Circle),
     Ellipse(Ellipse),
     Polygon(Polygon),
+}
+
+impl MeshShape for Shape {
+    fn add_to_builder<'a>(&self, builder: &'a mut ggraphics::MeshBuilder) -> &'a mut ggraphics::MeshBuilder {
+	match self {
+	    Shape::Rectangle(s) => s.add_to_builder(builder),
+	    Shape::Circle(c) => c.add_to_builder(builder),
+	    Shape::Ellipse(e) => e.add_to_builder(builder),
+	    Shape::Polygon(p) => p.add_to_builder(builder),
+	}
+    }
+}
+
+pub struct DrawableShape {
+    shape: Shape,
+    mesh: ggraphics::Mesh,
+    drwob_essential: DrawableObjectEssential,
+    draw_param: ggraphics::DrawParam,
+}
+
+impl DrawableShape {
+    pub fn new(ctx: &mut ggez::Context, shape: Shape, depth: i8, color: ggraphics::Color) -> Self {
+	let mut builder = ggraphics::MeshBuilder::new();
+	shape.add_to_builder(&mut builder);
+
+	let mut dparam = ggraphics::DrawParam::default();
+	dparam.color = color;
+	
+	DrawableShape {
+	    mesh: builder.build(ctx).unwrap(),
+	    shape: shape,
+	    drwob_essential: DrawableObjectEssential::new(true, depth),
+	    draw_param: dparam,
+	}
+    }
+
+    pub fn ref_shape(&self) -> &Shape {
+	&self.shape
+    }
+
+    pub fn ref_shape_mut(&mut self) -> &mut Shape {
+	&mut self.shape
+    }
+}
+
+impl DrawableComponent for DrawableShape {
+    fn draw(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult<()> {
+	if self.is_visible() {
+	    ggraphics::draw(ctx, &self.mesh, self.draw_param)?;
+	}
+
+	Ok(())
+    }
+
+    fn hide(&mut self) {
+	self.drwob_essential.visible = false;
+    }
+
+    fn appear(&mut self) {
+	self.drwob_essential.visible = true;
+    }
+
+    fn is_visible(&self) -> bool {
+	self.drwob_essential.visible
+    }
+
+    fn set_drawing_depth(&mut self, depth: i8) {
+	self.drwob_essential.drawing_depth = depth;
+    }
+
+    fn get_drawing_depth(&self) -> i8 {
+	self.drwob_essential.drawing_depth
+    }
 }
