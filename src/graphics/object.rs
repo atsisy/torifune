@@ -11,6 +11,7 @@ use ggez::graphics as ggraphics;
 use ggez::*;
 use std::cmp::Ordering;
 use std::rc::Rc;
+use std::ops::{Deref, DerefMut};
 
 ///
 /// # テクスチャを利用して描画を行うために必要なインターフェイスを保証させるトレイト
@@ -1107,6 +1108,20 @@ impl<T: ?Sized + TextureObject> MovableWrap<T> {
     }
 }
 
+impl<T: ?Sized + TextureObject> Deref for MovableWrap<T> {
+    type Target = T;
+    
+    fn deref(&self) -> &Self::Target {
+	self.ref_wrapped_object()
+    }
+}
+
+impl<T: ?Sized + TextureObject> DerefMut for MovableWrap<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+	self.ref_wrapped_object_mut()
+    }
+}
+
 impl<T: ?Sized + TextureObject> DrawableComponent for MovableWrap<T> {
     fn draw(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult<()> {
         self.texture_object.draw(ctx)
@@ -1224,6 +1239,20 @@ impl<T: MovableObject + TextureObject> EffectableWrap<T> {
 
     pub fn move_wrapped_object(self) -> Box<T> {
         Box::new(self.movable_object)
+    }
+}
+
+impl<T: MovableObject + TextureObject> Deref for EffectableWrap<T> {
+    type Target = T;
+    
+    fn deref(&self) -> &Self::Target {
+	self.ref_wrapped_object()
+    }
+}
+
+impl<T: MovableObject + TextureObject> DerefMut for EffectableWrap<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+	self.ref_wrapped_object_mut()
     }
 }
 
