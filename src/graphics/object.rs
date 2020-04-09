@@ -1,17 +1,17 @@
 pub mod menu;
+pub mod shadow;
 pub mod shape;
 pub mod sub_screen;
 pub mod tile_batch;
-pub mod shadow;
 
 use super::super::numeric;
-use super::{DrawableComponent, DrawableObject, DrawableObjectEssential};
+use super::drawable::{DrawableComponent, DrawableObject, DrawableObjectEssential};
 use crate::core::Clock;
 use ggez::graphics as ggraphics;
 use ggez::*;
 use std::cmp::Ordering;
-use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
+use std::rc::Rc;
 
 ///
 /// # テクスチャを利用して描画を行うために必要なインターフェイスを保証させるトレイト
@@ -1110,15 +1110,15 @@ impl<T: ?Sized + TextureObject> MovableWrap<T> {
 
 impl<T: ?Sized + TextureObject> Deref for MovableWrap<T> {
     type Target = T;
-    
+
     fn deref(&self) -> &Self::Target {
-	self.ref_wrapped_object()
+        self.ref_wrapped_object()
     }
 }
 
 impl<T: ?Sized + TextureObject> DerefMut for MovableWrap<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-	self.ref_wrapped_object_mut()
+        self.ref_wrapped_object_mut()
     }
 }
 
@@ -1244,15 +1244,15 @@ impl<T: MovableObject + TextureObject> EffectableWrap<T> {
 
 impl<T: MovableObject + TextureObject> Deref for EffectableWrap<T> {
     type Target = T;
-    
+
     fn deref(&self) -> &Self::Target {
-	self.ref_wrapped_object()
+        self.ref_wrapped_object()
     }
 }
 
 impl<T: MovableObject + TextureObject> DerefMut for EffectableWrap<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-	self.ref_wrapped_object_mut()
+        self.ref_wrapped_object_mut()
     }
 }
 

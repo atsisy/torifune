@@ -55,6 +55,6 @@ macro_rules! distance {
 #[macro_export]
 macro_rules! roundup2f {
     ($v1: expr) => {
-	torifune::numeric::Point2f::new($v1.x.round(), $v1.y.round())
+        torifune::numeric::Point2f::new($v1.x.round(), $v1.y.round())
     };
 }

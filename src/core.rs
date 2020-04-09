@@ -19,8 +19,7 @@ pub struct ScheduledEvent<Args> {
 }
 
 impl<Args> ScheduledEvent<Args> {
-
-    /// ScheduledEvent構造体の生成メソッド 
+    /// ScheduledEvent構造体の生成メソッド
     ///
     /// # Example
     /// ```
@@ -31,8 +30,11 @@ impl<Args> ScheduledEvent<Args> {
     ///         Ok(())
     ///     }, 10);
     /// ```
-    pub fn new(func: Box<dyn Fn(Args) ->  ()>, call_abs: Clock) -> ScheduledEvent<Args> {
-        ScheduledEvent { run_time: call_abs, func: func }
+    pub fn new(func: Box<dyn Fn(Args) -> ()>, call_abs: Clock) -> ScheduledEvent<Args> {
+        ScheduledEvent {
+            run_time: call_abs,
+            func: func,
+        }
     }
 
     pub fn call_event(&self, args: Args) {
@@ -42,10 +44,8 @@ impl<Args> ScheduledEvent<Args> {
     pub fn get_scheduled(&self) -> Clock {
         self.run_time
     }
-    
 }
 
 pub trait Updatable {
-    fn update(&mut self, _ctx: &ggez::Context, _t: Clock) {
-    }
+    fn update(&mut self, _ctx: &ggez::Context, _t: Clock) {}
 }

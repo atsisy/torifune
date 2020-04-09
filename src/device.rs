@@ -1,11 +1,11 @@
-use ggez::*;
-use ggez::input::mouse::MouseButton;
-use ggez::input;
-use super::core::Updatable;
 use super::core::Clock;
+use super::core::Updatable;
+use super::numeric;
+use ggez::input;
+use ggez::input::mouse::MouseButton;
+use ggez::*;
 use std::collections::HashMap;
 use std::hash::Hash;
-use super::numeric;
 
 ///
 /// # マウスのボタンの状態
@@ -52,42 +52,76 @@ pub enum MouseButtonEvent {
 pub struct MouseListener {
     last_clicked: HashMap<MouseButton, numeric::Point2f>,
     button_map: HashMap<MouseButton, MouseButtonStatus>,
-    event_handlers: HashMap<MouseButton, HashMap<MouseButtonEvent, Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>>>,
+    event_handlers: HashMap<
+        MouseButton,
+        HashMap<MouseButtonEvent, Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>>,
+    >,
 }
 
 impl MouseListener {
-
-    /// ScheduledEvent構造体の生成メソッド 
+    /// ScheduledEvent構造体の生成メソッド
     pub fn new() -> MouseListener {
         let mut button_map = HashMap::new();
-        
+
         button_map.insert(MouseButton::Left, MouseButtonStatus::MouseReleased);
         button_map.insert(MouseButton::Middle, MouseButtonStatus::MouseReleased);
         button_map.insert(MouseButton::Right, MouseButtonStatus::MouseReleased);
 
         let mut events = HashMap::new();
-        events.insert(MouseButton::Left,
-                      hash![
-                          (MouseButtonEvent::Clicked, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
-                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
-                          (MouseButtonEvent::Dragged, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new())
-                      ]);
-        
+        events.insert(
+            MouseButton::Left,
+            hash![
+                (
+                    MouseButtonEvent::Clicked,
+                    Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()
+                ),
+                (
+                    MouseButtonEvent::Pressed,
+                    Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()
+                ),
+                (
+                    MouseButtonEvent::Dragged,
+                    Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()
+                )
+            ],
+        );
 
-        events.insert(MouseButton::Middle,
-                      hash![
-                          (MouseButtonEvent::Clicked, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
-                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
-                          (MouseButtonEvent::Dragged, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new())
-                      ]);
+        events.insert(
+            MouseButton::Middle,
+            hash![
+                (
+                    MouseButtonEvent::Clicked,
+                    Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()
+                ),
+                (
+                    MouseButtonEvent::Pressed,
+                    Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()
+                ),
+                (
+                    MouseButtonEvent::Dragged,
+                    Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()
+                )
+            ],
+        );
 
-        events.insert(MouseButton::Right,
-                      hash![
-                          (MouseButtonEvent::Clicked, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
-                          (MouseButtonEvent::Pressed, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()),
-                          (MouseButtonEvent::Dragged, Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new())
-                      ]);
-        
+        events.insert(
+            MouseButton::Right,
+            hash![
+                (
+                    MouseButtonEvent::Clicked,
+                    Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()
+                ),
+                (
+                    MouseButtonEvent::Pressed,
+                    Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()
+                ),
+                (
+                    MouseButtonEvent::Dragged,
+                    Vec::<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>::new()
+                )
+            ],
+        );
+
         MouseListener {
             last_clicked: hash![
                 (MouseButton::Left, numeric::Point2f::new(0.0, 0.0)),
@@ -102,8 +136,12 @@ impl MouseListener {
     ///
     /// マウスのイベントハンドラを登録するためのメソッド
     ///
-    pub fn register_event_handler(&mut self, button: MouseButton, event: MouseButtonEvent,
-                                      f: Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>) {
+    pub fn register_event_handler(
+        &mut self,
+        button: MouseButton,
+        event: MouseButtonEvent,
+        f: Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>,
+    ) {
         self.event_handlers
             .get_mut(&button)
             .unwrap()
@@ -133,28 +171,33 @@ impl MouseListener {
     //
     pub fn get_last_clicked(&self, button: MouseButton) -> numeric::Point2f {
         match button {
-            MouseButton::Left | MouseButton::Middle | MouseButton::Right => self.last_clicked[&button],
+            MouseButton::Left | MouseButton::Middle | MouseButton::Right => {
+                self.last_clicked[&button]
+            }
             _ => panic!("Other MouseButton is detected!!"),
         }
     }
 
-    fn __flush_button_event(&mut self, ctx: &ggez::Context, t: Clock, button: MouseButton, current_state: &MouseButtonStatus) {
+    fn __flush_button_event(
+        &mut self,
+        ctx: &ggez::Context,
+        t: Clock,
+        button: MouseButton,
+        current_state: &MouseButtonStatus,
+    ) {
         // 入力内容が以前と異なる
         let event = if *current_state != self.button_map[&button] {
-            
             // 操作を検知
             match *current_state {
                 MouseButtonStatus::MousePressed => MouseButtonEvent::Pressed,
                 MouseButtonStatus::MouseReleased => {
-
                     // clickされた場合、last_clickにセット
                     self.last_clicked.insert(button, Self::get_position(ctx));
-                    
+
                     MouseButtonEvent::Clicked
-                },
+                }
             }
         } else {
-            
             // マウスのドラッグの判定
             if current_state == &MouseButtonStatus::MousePressed {
                 MouseButtonEvent::Dragged
@@ -168,17 +211,19 @@ impl MouseListener {
         for f in &self.event_handlers[&button][&event] {
             match f(ctx, t) {
                 Err(x) => panic!(x),
-                _ => ()
+                _ => (),
             }
         }
     }
 
-    fn flush_button_event(&mut self,
-                          ctx: &ggez::Context,
-                          t: Clock,
-                          l_state: &MouseButtonStatus,
-                          m_state: &MouseButtonStatus,
-                          r_state: &MouseButtonStatus) {
+    fn flush_button_event(
+        &mut self,
+        ctx: &ggez::Context,
+        t: Clock,
+        l_state: &MouseButtonStatus,
+        m_state: &MouseButtonStatus,
+        r_state: &MouseButtonStatus,
+    ) {
         self.__flush_button_event(ctx, t, MouseButton::Left, l_state);
         self.__flush_button_event(ctx, t, MouseButton::Middle, m_state);
         self.__flush_button_event(ctx, t, MouseButton::Right, r_state);
@@ -187,11 +232,10 @@ impl MouseListener {
 
 impl Updatable for MouseListener {
     fn update(&mut self, ctx: &ggez::Context, t: Clock) {
-
         let (l_status, m_status, r_status) = (
             MouseListener::check_button(ctx, MouseButton::Left),
             MouseListener::check_button(ctx, MouseButton::Middle),
-            MouseListener::check_button(ctx, MouseButton::Right)
+            MouseListener::check_button(ctx, MouseButton::Right),
         );
 
         //
@@ -202,7 +246,6 @@ impl Updatable for MouseListener {
         self.button_map.insert(MouseButton::Left, l_status);
         self.button_map.insert(MouseButton::Middle, m_status);
         self.button_map.insert(MouseButton::Right, r_status);
-        
     }
 }
 
@@ -286,7 +329,6 @@ pub enum KeyStatus {
 }
 
 impl KeyStatus {
-    
     #[inline(always)]
     pub fn positive_logic(b: bool) -> KeyStatus {
         if b {
@@ -304,8 +346,6 @@ impl KeyStatus {
             KeyStatus::Pressed
         }
     }
-
-    
 }
 
 ///
@@ -327,7 +367,6 @@ pub enum KeyboardEvent {
     Unknown,
 }
 
-
 ///
 /// # 入力デバイス
 // 入力デバイスを表す
@@ -341,37 +380,40 @@ pub enum KeyInputDevice {
     PS3Controller,
 }
 
-
 fn vkey_input_check_generic_keyboard(ctx: &Context, vkey: &VirtualKey) -> KeyStatus {
-    KeyStatus::positive_logic(
-        match vkey {
-            VirtualKey::Left => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Left),
-            VirtualKey::Right => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Right),
-            VirtualKey::Up => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Up),
-            VirtualKey::Down => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Down),
-            VirtualKey::LeftSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::A),
-            VirtualKey::RightSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::D),
-            VirtualKey::UpSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::W),
-            VirtualKey::DownSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::S),
-            VirtualKey::LeftSubSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::J),
-            VirtualKey::RightSubSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::L),
-            VirtualKey::UpSubSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::I),
-            VirtualKey::DownSubSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::K),
-            VirtualKey::Action1 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Z),
-            VirtualKey::Action2 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::X),
-            VirtualKey::Action3 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::C),
-            VirtualKey::Action4 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::V),
-            VirtualKey::Action5 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::N),
-            VirtualKey::Action6 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::M),
-            VirtualKey::Action7 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Comma),
-            VirtualKey::Action8 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Period),
-            VirtualKey::Mod1 => input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::SHIFT),
-            VirtualKey::Mod2 => input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::CTRL),
-            VirtualKey::Mod3 => input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::ALT),
-            VirtualKey::Mod4 => input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::LOGO),
-            _ => false,
+    KeyStatus::positive_logic(match vkey {
+        VirtualKey::Left => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Left),
+        VirtualKey::Right => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Right),
+        VirtualKey::Up => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Up),
+        VirtualKey::Down => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Down),
+        VirtualKey::LeftSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::A),
+        VirtualKey::RightSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::D),
+        VirtualKey::UpSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::W),
+        VirtualKey::DownSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::S),
+        VirtualKey::LeftSubSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::J),
+        VirtualKey::RightSubSub => {
+            input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::L)
         }
-    )
+        VirtualKey::UpSubSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::I),
+        VirtualKey::DownSubSub => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::K),
+        VirtualKey::Action1 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Z),
+        VirtualKey::Action2 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::X),
+        VirtualKey::Action3 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::C),
+        VirtualKey::Action4 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::V),
+        VirtualKey::Action5 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::N),
+        VirtualKey::Action6 => input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::M),
+        VirtualKey::Action7 => {
+            input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Comma)
+        }
+        VirtualKey::Action8 => {
+            input::keyboard::is_key_pressed(ctx, input::keyboard::KeyCode::Period)
+        }
+        VirtualKey::Mod1 => input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::SHIFT),
+        VirtualKey::Mod2 => input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::CTRL),
+        VirtualKey::Mod3 => input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::ALT),
+        VirtualKey::Mod4 => input::keyboard::is_mod_active(ctx, input::keyboard::KeyMods::LOGO),
+        _ => false,
+    })
 }
 
 fn vkey_input_check_not_implemented(_ctx: &Context, _vkey: &VirtualKey) -> KeyStatus {
@@ -413,16 +455,17 @@ pub struct KeyboardListener {
 }
 
 impl KeyboardListener {
-
-    /// # ScheduledEvent構造体の生成メソッド 
+    /// # ScheduledEvent構造体の生成メソッド
     pub fn new(devices: Vec<KeyInputDevice>) -> KeyboardListener {
         // key_mapは全てReleasedで初期化
         let key_map = vec![KeyStatus::Released; (VirtualKey::Unknown as usize) + 1];
         let mut listening = Vec::new();
 
-        let mut events: Vec<Vec<Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>>> = Vec::new();
+        let mut events: Vec<Vec<Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>>> =
+            Vec::new();
         for vkey_raw in 0..(VirtualKey::Unknown as i32 + 1) {
-            let mut tmp: Vec<Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>> = Vec::new();
+            let mut tmp: Vec<Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>> =
+                Vec::new();
             for _ in 0..(KeyboardEvent::Unknown as i32 + 1) {
                 tmp.push(Vec::new());
             }
@@ -431,7 +474,7 @@ impl KeyboardListener {
             // ListeningするVirtualKeyは全て
             listening.push(VirtualKey::from_i32(vkey_raw));
         }
-        
+
         KeyboardListener {
             devices: devices,
             listening: listening,
@@ -443,19 +486,24 @@ impl KeyboardListener {
     ///
     /// # ScheduledEvent構造体の生成メソッド
     ///
-    pub fn new_masked(devices: Vec<KeyInputDevice>, listening: Vec<VirtualKey>) -> KeyboardListener {
+    pub fn new_masked(
+        devices: Vec<KeyInputDevice>,
+        listening: Vec<VirtualKey>,
+    ) -> KeyboardListener {
         // key_mapは全てReleasedで初期化
         let key_map = vec![KeyStatus::Released; (VirtualKey::Unknown as usize) + 1];
 
-        let mut events: Vec<Vec<Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>>> = Vec::new();
+        let mut events: Vec<Vec<Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>>> =
+            Vec::new();
         for _ in 0..(VirtualKey::Unknown as i32 + 1) {
-            let mut tmp: Vec<Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>> = Vec::new();
+            let mut tmp: Vec<Vec<Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>>> =
+                Vec::new();
             for _ in 0..(KeyboardEvent::Unknown as i32 + 1) {
                 tmp.push(Vec::new());
             }
             events.push(tmp);
         }
-        
+
         KeyboardListener {
             devices: devices,
             listening: listening,
@@ -463,12 +511,16 @@ impl KeyboardListener {
             event_handlers: events,
         }
     }
-    
+
     ///
     /// キーボードのイベントハンドラを登録するためのメソッド
     ///
-    pub fn register_event_handler(&mut self, key: VirtualKey, event: KeyboardEvent,
-                                  f: Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>) {
+    pub fn register_event_handler(
+        &mut self,
+        key: VirtualKey,
+        event: KeyboardEvent,
+        f: Box<dyn Fn(&ggez::Context, Clock) -> Result<(), String>>,
+    ) {
         self.event_handlers
             .get_mut(key as usize)
             .unwrap()
@@ -480,7 +532,13 @@ impl KeyboardListener {
     ///
     /// キー入力に応じてイベントハンドラを呼び出すメソッド
     ///
-    fn flush_key_event(&self, ctx: &ggez::Context, t: Clock, vkey: &VirtualKey, current_state: &KeyStatus) {
+    fn flush_key_event(
+        &self,
+        ctx: &ggez::Context,
+        t: Clock,
+        vkey: &VirtualKey,
+        current_state: &KeyStatus,
+    ) {
         let event = if *current_state != *self.key_map.get(*vkey as usize).unwrap() {
             match current_state {
                 &KeyStatus::Pressed => KeyboardEvent::FirstPressed,
@@ -495,24 +553,24 @@ impl KeyboardListener {
             }
         };
 
-        for f in self.event_handlers
+        for f in self
+            .event_handlers
             .get(*vkey as usize)
             .unwrap()
             .get(event as usize)
-            .unwrap() {
+            .unwrap()
+        {
             match f(ctx, t) {
                 Err(x) => panic!(x),
-                _ => ()
+                _ => (),
             }
         }
-        
     }
 
     ///
     /// 複数のキー入力デバイスの状態をミックスするメソッドs
     ///
     pub fn current_key_status(&self, ctx: &ggez::Context, vkey: &VirtualKey) -> KeyStatus {
-        
         for device in &self.devices {
             if vkey_input_check(ctx, device, vkey) == KeyStatus::Pressed {
                 return KeyStatus::Pressed;
@@ -521,18 +579,15 @@ impl KeyboardListener {
 
         KeyStatus::Released
     }
-
 }
 
 impl Updatable for KeyboardListener {
     fn update(&mut self, ctx: &ggez::Context, t: Clock) {
-
         for vkey in &self.listening {
             let current_state = self.current_key_status(ctx, vkey);
             self.flush_key_event(ctx, t, &vkey, &current_state);
             self.key_map[*vkey as usize] = current_state;
         }
-        
     }
 }
 
@@ -576,17 +631,17 @@ impl ProgramableGenericKey {
                 (input::keyboard::KeyCode::N, VirtualKey::Action5),
                 (input::keyboard::KeyCode::M, VirtualKey::Action6),
                 (input::keyboard::KeyCode::Comma, VirtualKey::Action7),
-                (input::keyboard::KeyCode::Period, VirtualKey::Action8)]
+                (input::keyboard::KeyCode::Period, VirtualKey::Action8)
+            ],
         }
     }
 }
 
 impl ProgramableKey for ProgramableGenericKey {
-    
     fn update_config(&mut self, real: input::keyboard::KeyCode, virt: VirtualKey) {
         self.key_map.insert(real, virt);
     }
-    
+
     fn virtual_to_real(&self, virt_key: VirtualKey) -> input::keyboard::KeyCode {
         // keyから探す
         for (k, v) in &self.key_map {
@@ -597,7 +652,7 @@ impl ProgramableKey for ProgramableGenericKey {
 
         panic!("Non implemented virtual Key: {}", virt_key as i32);
     }
-    
+
     fn real_to_virtual(&self, real: input::keyboard::KeyCode) -> VirtualKey {
         match self.key_map.get(&real) {
             Some(virt) => *virt,
