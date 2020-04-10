@@ -1,4 +1,7 @@
+use std::ops::{Deref, DerefMut};
+
 use ggez::graphics as ggraphics;
+use ggraphics::Drawable;
 
 use crate::graphics::drawable::{DrawableComponent, DrawableObjectEssential};
 use crate::numeric;
@@ -91,6 +94,10 @@ impl Circle {
 
     pub fn get_mode(&self) -> ggraphics::DrawMode {
         self.mode
+    }
+
+    pub fn add_radius(&mut self, offset: f32) {
+	self.radius += offset;
     }
 
     pub fn get_color(&self) -> ggraphics::Color {
@@ -320,15 +327,17 @@ impl MeshShape for Shape {
     }
 }
 
-pub struct DrawableShape {
-    shape: Shape,
+pub struct DrawableShape<S>
+where S: MeshShape {
+    shape: S,
     mesh: ggraphics::Mesh,
     drwob_essential: DrawableObjectEssential,
     draw_param: ggraphics::DrawParam,
 }
 
-impl DrawableShape {
-    pub fn new(ctx: &mut ggez::Context, shape: Shape, depth: i8, color: ggraphics::Color) -> Self {
+impl<S> DrawableShape<S>
+where S: MeshShape {
+    pub fn new(ctx: &mut ggez::Context, shape: S, depth: i8, color: ggraphics::Color) -> Self {
         let mut builder = ggraphics::MeshBuilder::new();
         shape.add_to_builder(&mut builder);
 
@@ -343,16 +352,19 @@ impl DrawableShape {
         }
     }
 
-    pub fn ref_shape(&self) -> &Shape {
-        &self.shape
+    pub fn update_shape(&mut self, ctx: &mut ggez::Context) {
+	let mut builder = ggraphics::MeshBuilder::new();
+        self.shape.add_to_builder(&mut builder);
+	self.mesh = builder.build(ctx).unwrap();
     }
 
-    pub fn ref_shape_mut(&mut self) -> &mut Shape {
-        &mut self.shape
+    pub fn set_blend_mode(&mut self, mode: ggraphics::BlendMode) {
+	self.mesh.set_blend_mode(Some(mode));
     }
 }
 
-impl DrawableComponent for DrawableShape {
+impl<S> DrawableComponent for DrawableShape<S>
+where S: MeshShape {
     fn draw(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult<()> {
         if self.is_visible() {
             ggraphics::draw(ctx, &self.mesh, self.draw_param)?;
@@ -379,5 +391,20 @@ impl DrawableComponent for DrawableShape {
 
     fn get_drawing_depth(&self) -> i8 {
         self.drwob_essential.drawing_depth
+    }
+}
+
+impl<S> Deref for DrawableShape<S>
+where S: MeshShape {
+    type Target = S;
+    fn deref(&self) -> &Self::Target {
+	&self.shape
+    }
+}
+
+impl<S> DerefMut for DrawableShape<S>
+where S: MeshShape {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+	&mut self.shape
     }
 }

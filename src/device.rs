@@ -231,7 +231,7 @@ impl MouseListener {
 }
 
 impl Updatable for MouseListener {
-    fn update(&mut self, ctx: &ggez::Context, t: Clock) {
+    fn update(&mut self, ctx: &mut ggez::Context, t: Clock) {
         let (l_status, m_status, r_status) = (
             MouseListener::check_button(ctx, MouseButton::Left),
             MouseListener::check_button(ctx, MouseButton::Middle),
@@ -582,7 +582,7 @@ impl KeyboardListener {
 }
 
 impl Updatable for KeyboardListener {
-    fn update(&mut self, ctx: &ggez::Context, t: Clock) {
+    fn update(&mut self, ctx: &mut ggez::Context, t: Clock) {
         for vkey in &self.listening {
             let current_state = self.current_key_status(ctx, vkey);
             self.flush_key_event(ctx, t, &vkey, &current_state);
