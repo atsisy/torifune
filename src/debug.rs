@@ -12,7 +12,7 @@ use crate::numeric;
 struct DebugScreen {
     font_info: FontInformation,
     text_limit: usize,
-    text: VecDeque<MovableText>,
+    text: VecDeque<UniText>,
     screen: SubScreen,
     rect: numeric::Rect,
 }
@@ -37,15 +37,13 @@ impl DebugScreen {
     }
 
     fn push_text(&mut self, text: &str) {
-        let text = MovableText::new(
+        let text = UniText::new(
             text.to_string(),
             numeric::Point2f::new(10.0, self.rect.h - self.font_info.scale.y - 5.0),
             numeric::Vector2f::new(1.0, 1.0),
             0.0,
             0,
-            None,
             self.font_info,
-            0,
         );
 
         if self.text.len() > self.text_limit {

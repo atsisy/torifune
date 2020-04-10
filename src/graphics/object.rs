@@ -826,19 +826,14 @@ impl FontInformation {
 /// ### font_info
 /// フォントの種類やスケールが保持されている
 ///
-/// ### birth_time
-/// このオブジェクトが生成された時刻
-///
-pub struct MovableText {
+pub struct UniText {
     drwob_essential: DrawableObjectEssential,
     text: graphics::Text,
     font_info: FontInformation,
     draw_param: ggraphics::DrawParam,
-    mv_essential: MovableEssential,
-    birth_time: Clock,
 }
 
-impl MovableText {
+impl UniText {
     // 生成関数
     pub fn new(
         text: String,
@@ -846,22 +841,18 @@ impl MovableText {
         scale: numeric::Vector2f,
         rotation: f32,
         drawing_depth: i8,
-        mf: Option<Box<dyn Fn(&dyn MovableObject, Clock) -> numeric::Point2f>>,
         font_info: FontInformation,
-        now: Clock,
-    ) -> MovableText {
+    ) -> UniText {
         let mut param = ggraphics::DrawParam::new();
         param.dest = pos.into();
         param.scale = scale.into();
         param.rotation = rotation;
 
-        let mut ret_text = MovableText {
+        let mut ret_text = UniText {
             drwob_essential: DrawableObjectEssential::new(true, drawing_depth),
             text: ggraphics::Text::new(text),
             font_info: font_info,
             draw_param: param,
-            mv_essential: MovableEssential::new(mf, now, pos),
-            birth_time: now,
         };
 
         ret_text.apply_font_information();
@@ -903,7 +894,7 @@ impl MovableText {
     }
 }
 
-impl DrawableComponent for MovableText {
+impl DrawableComponent for UniText {
     #[inline(always)]
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         if self.drwob_essential.visible {
@@ -940,7 +931,7 @@ impl DrawableComponent for MovableText {
     }
 }
 
-impl DrawableObject for MovableText {
+impl DrawableObject for UniText {
     #[inline(always)]
     fn set_position(&mut self, pos: numeric::Point2f) {
         self.draw_param.dest = pos.into();
@@ -958,7 +949,7 @@ impl DrawableObject for MovableText {
     }
 }
 
-impl TextureObject for MovableText {
+impl TextureObject for UniText {
     #[inline(always)]
     fn set_scale(&mut self, scale: numeric::Vector2f) {
         self.draw_param.scale = scale.into();
@@ -1035,44 +1026,6 @@ impl TextureObject for MovableText {
     #[inline(always)]
     fn get_color(&mut self) -> ggraphics::Color {
         self.draw_param.color
-    }
-}
-
-impl HasBirthTime for MovableText {
-    #[inline(always)]
-    fn get_birth_time(&self) -> Clock {
-        self.birth_time
-    }
-}
-
-impl MovableObject for MovableText {
-    fn move_with_func(&mut self, t: Clock) {
-        // クロージャにはselfと経過時間を与える
-        let not_stop = self.mv_essential.move_func.is_some();
-        if not_stop {
-            self.set_position((self.mv_essential.move_func.as_ref().unwrap())(
-                self,
-                t - self.mv_essential.mf_set_time,
-            ));
-        }
-    }
-
-    // 従う関数を変更する
-    fn override_move_func(
-        &mut self,
-        move_fn: Option<Box<dyn Fn(&dyn MovableObject, Clock) -> numeric::Point2f>>,
-        now: Clock,
-    ) {
-        self.mv_essential.move_func = move_fn;
-        self.mv_essential.mf_set_time = now;
-    }
-
-    fn mf_start_timing(&self) -> Clock {
-        self.mv_essential.mf_set_time
-    }
-
-    fn is_stop(&self) -> bool {
-        self.mv_essential.move_func.is_none()
     }
 }
 
@@ -1367,6 +1320,7 @@ impl<T: MovableObject + TextureObject> Effectable for EffectableWrap<T> {
 }
 
 pub type SimpleObject = EffectableWrap<MovableUniTexture>;
+pub type MovableText = MovableWrap<UniText>;
 pub type SimpleText = EffectableWrap<MovableText>;
 
 pub struct VerticalText {
