@@ -1,0 +1,60 @@
+use std::{time::Duration, collections::HashMap};
+
+use ggez::audio as gaudio;
+use ggez::audio::SoundSource;
+
+pub type SoundData = gaudio::SoundData;
+pub type SoundHandler = usize;
+
+#[derive(Clone)]
+pub struct SoundPlayFlags {
+    fadein_mills: u64,
+    pitch: f32,
+}
+
+impl Default for SoundPlayFlags {
+    fn default() -> Self {
+	SoundPlayFlags {
+	    fadein_mills: 0,
+	    pitch: 1.0,
+	}
+    }
+}
+
+pub struct SoundManager {
+    playing_map: HashMap<SoundHandler, gaudio::Source>,
+    next_sound_handler: SoundHandler,
+}
+
+impl SoundManager {
+    pub fn new(&self) -> Self {
+	SoundManager {
+	    playing_map: HashMap::new(),
+	    next_sound_handler: 0,
+	}
+    }
+
+    pub fn play(
+	&mut self,
+	ctx: &mut ggez::Context,
+	sound_data: SoundData,
+	flags: Option<SoundPlayFlags>,
+    ) -> SoundHandler {
+	let mut sound = gaudio::Source::from_data(ctx, sound_data).unwrap();
+
+	if let Some(flags) = flags {
+	    sound.set_fade_in(Duration::from_millis(flags.fadein_mills));
+	    sound.set_pitch(flags.pitch);
+	}
+	
+	let handler = self.issue_sound_handler();
+	self.playing_map.insert(handler, sound);
+	handler
+    }
+
+    fn issue_sound_handler(&mut self) -> SoundHandler {
+	let ret = self.next_sound_handler;
+	self.next_sound_handler += 1;
+	ret
+    }
+}
