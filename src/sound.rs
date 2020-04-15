@@ -4,6 +4,7 @@ use ggez::audio as gaudio;
 use ggez::audio::SoundSource;
 
 pub type SoundData = gaudio::SoundData;
+pub type PlayableSound = gaudio::Source;
 pub type SoundHandler = usize;
 
 #[derive(Clone)]
@@ -22,12 +23,12 @@ impl Default for SoundPlayFlags {
 }
 
 pub struct SoundManager {
-    playing_map: HashMap<SoundHandler, gaudio::Source>,
+    playing_map: HashMap<SoundHandler, PlayableSound>,
     next_sound_handler: SoundHandler,
 }
 
 impl SoundManager {
-    pub fn new(&self) -> Self {
+    pub fn new() -> Self {
 	SoundManager {
 	    playing_map: HashMap::new(),
 	    next_sound_handler: 0,
@@ -40,7 +41,7 @@ impl SoundManager {
 	sound_data: SoundData,
 	flags: Option<SoundPlayFlags>,
     ) -> SoundHandler {
-	let mut sound = gaudio::Source::from_data(ctx, sound_data).unwrap();
+	let mut sound = PlayableSound::from_data(ctx, sound_data).unwrap();
 
 	if let Some(flags) = flags {
 	    sound.set_fade_in(Duration::from_millis(flags.fadein_mills));
@@ -56,5 +57,13 @@ impl SoundManager {
 	let ret = self.next_sound_handler;
 	self.next_sound_handler += 1;
 	ret
+    }
+
+    pub fn ref_sound(&self, handler: SoundHandler) -> &PlayableSound {
+	self.playing_map.get(&handler).unwrap()
+    }
+
+    pub fn ref_sound_mut(&mut self, handler: SoundHandler) -> &mut PlayableSound {
+	self.playing_map.get_mut(&handler).unwrap()
     }
 }
