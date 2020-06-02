@@ -64,14 +64,18 @@ impl DebugScreen {
 
 impl DrawableComponent for DebugScreen {
     fn draw(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult<()> {
-        sub_screen::stack_screen(ctx, &self.screen);
+	if self.is_visible() {
+            sub_screen::stack_screen(ctx, &self.screen);
+	    
+            for text in &mut self.text {
+		text.draw(ctx)?;
+            }
+	    
+            sub_screen::pop_screen(ctx);
+            self.screen.draw(ctx)?;
+	}
 
-        for text in &mut self.text {
-            text.draw(ctx)?;
-        }
-
-        sub_screen::pop_screen(ctx);
-        self.screen.draw(ctx)
+	Ok(())
     }
 
     fn hide(&mut self) {
