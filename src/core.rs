@@ -49,3 +49,9 @@ impl<Args> ScheduledEvent<Args> {
 pub trait Updatable {
     fn update(&mut self, _ctx: &mut ggez::Context, _t: Clock) {}
 }
+
+#[derive(Copy, Clone, Eq, PartialEq)]
+pub enum DrawRequest {
+    Draw,
+    Skip,
+}
