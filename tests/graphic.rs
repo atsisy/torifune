@@ -8,12 +8,13 @@ use torifune::core::Updatable;
 use torifune::device;
 use torifune::graphics::object as tobj;
 use torifune::graphics::object::*;
-use torifune::graphics::DrawableComponent;
+use torifune::graphics::drawable::*;
 use torifune::numeric;
 
 struct State {
     frames: usize,
     vertical_text: VerticalText,
+    vertical_text2: VerticalText,
     mouse: device::MouseListener,
     key: device::KeyboardListener,
     image: tobj::SimpleObject,
@@ -40,7 +41,7 @@ fn sample_keyboard_closure(
 
 impl State {
     fn new(ctx: &mut Context, image: tobj::SimpleObject) -> GameResult<State> {
-        let font = graphics::Font::new(ctx, "/azuki.ttf")?;
+        let font = graphics::Font::new(ctx, "/cinecaption226.ttf")?;
 
         //        let mut raw_text = graphics::Text::new("Hello");
         //        raw_text.set_font(font, graphics::Scale {x: 48.0, y: 48.0});
@@ -49,13 +50,25 @@ impl State {
             frames: 0,
             vertical_text: torifune::graphics::object::VerticalText::new(
                 "これはテスト".to_string(),
-                numeric::Point2f::new(0.0, 0.0),
+                numeric::Point2f::new(0.78, 0.0),
                 numeric::Vector2f::new(1.0, 1.0),
                 0.0,
                 0,
                 torifune::graphics::object::FontInformation::new(
                     font,
-                    numeric::Vector2f::new(24.0, 24.0),
+                    numeric::Vector2f::new(72.0, 72.0),
+                    ggraphics::WHITE,
+                ),
+            ),
+	    vertical_text2: torifune::graphics::object::VerticalText::new(
+                "これはテスト".to_string(),
+                numeric::Point2f::new(80.78, 0.3),
+                numeric::Vector2f::new(1.0, 1.0),
+                0.0,
+                0,
+                torifune::graphics::object::FontInformation::new(
+                    font,
+                    numeric::Vector2f::new(72.0, 72.0),
                     ggraphics::WHITE,
                 ),
             ),
@@ -128,8 +141,18 @@ impl ggez::event::EventHandler for State {
         let offset = self.frames as f32 / 10.0;
         self.image.set_alpha(0.1);
         self.image.draw(ctx)?;
+
+	ggraphics::set_default_filter(ctx, ggraphics::FilterMode::Linear);
+	
         self.vertical_text.draw(ctx);
-        graphics::present(ctx)?;
+
+	ggraphics::set_default_filter(ctx, ggraphics::FilterMode::Nearest);
+	
+	self.vertical_text2.draw(ctx);
+
+	ggraphics::set_default_filter(ctx, ggraphics::FilterMode::Linear);
+	
+	graphics::present(ctx)?;
 
         self.frames += 1;
         if (self.frames % 100) == 0 {
@@ -150,7 +173,12 @@ pub fn graphic_test() {
         path::PathBuf::from("./resources")
     };
 
-    let c = conf::Conf::new();
+    let mut c = conf::Conf::new();
+    c.window_setup = conf::WindowSetup {
+	samples: conf::NumSamples::Four,
+	..Default::default()
+    }; 
+    
     let (ref mut ctx, ref mut event_loop) = ContextBuilder::new("test", "akichi")
         .add_resource_path(resource_dir)
         .conf(c)
@@ -167,9 +195,7 @@ pub fn graphic_test() {
             torifune::numeric::Vector2f::new(1.0, 1.0),
             0.0,
             0,
-            Box::new(move |p: &dyn MovableObject, t: Clock| {
-                torifune::numeric::Point2f::new(p.get_position().x + 1.0, p.get_position().y)
-            }),
+	    None,
             0,
         ),
         vec![],

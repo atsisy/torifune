@@ -302,6 +302,8 @@ pub trait HasGenericEffect: Effectable {
     fn add_effect(&mut self, effect: Vec<GenericEffectFn>);
 
     fn clear_effect(&mut self);
+
+    fn is_empty_effect(&self) -> bool;
 }
 
 ///
@@ -1302,6 +1304,10 @@ impl<T: MovableObject + TextureObject> HasGenericEffect for EffectableWrap<T> {
 
     fn clear_effect(&mut self) {
         self.geffect_essential.effects_list.clear();
+    }
+
+    fn is_empty_effect(&self) -> bool {
+	self.geffect_essential.effects_list.is_empty()
     }
 }
 
