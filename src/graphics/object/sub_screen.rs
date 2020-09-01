@@ -43,7 +43,7 @@ impl SubScreen {
                     ctx,
                     pos.w as u16,
                     pos.h as u16,
-                    ggez::conf::NumSamples::One,
+                    ggez::conf::NumSamples::Four,
                 )
                 .unwrap(),
             ),
