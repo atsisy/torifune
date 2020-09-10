@@ -102,6 +102,17 @@ pub trait TextureObject: DrawableObject {
     }
 
     #[inline(always)]
+    fn fit_crop(&mut self, ctx: &mut ggez::Context, size: numeric::Vector2f) {
+        let current_size = self.get_drawing_size(ctx);
+        self.set_crop(numeric::Rect::new(
+	    0.0,
+	    0.0,
+	    size.x / current_size.x,
+	    size.y / current_size.y
+	));
+    }
+
+    #[inline(always)]
     fn make_center(&mut self, ctx: &mut ggez::Context, center: numeric::Point2f) {
         self.move_diff(center - self.get_center(ctx));
     }
