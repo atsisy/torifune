@@ -49,6 +49,7 @@ impl SoundManager {
 	}
 	
 	let handler = self.issue_sound_handler();
+	sound.play_later();
 	self.playing_map.insert(handler, sound);
 	handler
     }
