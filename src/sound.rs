@@ -11,6 +11,24 @@ pub type SoundHandler = usize;
 pub struct SoundPlayFlags {
     fadein_mills: u64,
     pitch: f32,
+    repeat: bool,
+    volume: f32,
+}
+
+impl SoundPlayFlags {
+    pub fn new(
+	fadein_mills: u64,
+	pitch: f32,
+	repeat: bool,
+	volume: f32,
+    ) -> SoundPlayFlags {
+	SoundPlayFlags {
+	    fadein_mills: fadein_mills,
+	    pitch: pitch,
+	    repeat: repeat,
+	    volume: volume,
+	}
+    }
 }
 
 impl Default for SoundPlayFlags {
@@ -18,6 +36,8 @@ impl Default for SoundPlayFlags {
 	SoundPlayFlags {
 	    fadein_mills: 0,
 	    pitch: 1.0,
+	    repeat: false,
+	    volume: 1.0,
 	}
     }
 }
@@ -46,10 +66,12 @@ impl SoundManager {
 	if let Some(flags) = flags {
 	    sound.set_fade_in(Duration::from_millis(flags.fadein_mills));
 	    sound.set_pitch(flags.pitch);
+	    sound.set_repeat(flags.repeat);
+	    sound.set_volume(flags.volume);
 	}
 	
 	let handler = self.issue_sound_handler();
-	sound.play_later();
+	sound.play_later().unwrap();
 	self.playing_map.insert(handler, sound);
 	handler
     }
