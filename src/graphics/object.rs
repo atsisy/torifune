@@ -247,7 +247,7 @@ pub trait HasBirthTime {
 }
 
 pub type GenericMoveFn =
-    Box<dyn Fn(&dyn MovableObject, Clock) -> numeric::Point2f>;
+    Box<dyn Fn(&dyn MovableObject, Clock) -> Option<numeric::Point2f>>;
 
 ///
 /// # 任意の関数に従って座標を動かすことができることを保証するトレイト
@@ -343,7 +343,7 @@ pub struct MovableEssential {
 impl MovableEssential {
     // MovableEssentialを生成する関数
     pub fn new(
-        f: Option<Box<dyn Fn(&dyn MovableObject, Clock) -> numeric::Point2f>>,
+        f: Option<GenericMoveFn>,
         t: Clock,
         init_pos: numeric::Point2f,
     ) -> MovableEssential {
@@ -356,7 +356,7 @@ impl MovableEssential {
 
     pub fn clone(
         &self,
-        f: Option<Box<dyn Fn(&dyn MovableObject, Clock) -> numeric::Point2f>>,
+        f: Option<GenericMoveFn>,
     ) -> Self {
         MovableEssential {
             move_func: f,
@@ -806,7 +806,7 @@ impl<T: ?Sized + TextureObject> MovableWrap<T> {
     // 生成関数
     pub fn new(
         texture_object: Box<T>,
-        mf: Option<Box<dyn Fn(&dyn MovableObject, Clock) -> numeric::Point2f>>,
+        mf: Option<GenericMoveFn>,
         t: Clock,
     ) -> MovableWrap<T> {
         let pos = texture_object.get_position();
@@ -896,18 +896,24 @@ impl<T: ?Sized + TextureObject> HasBirthTime for MovableWrap<T> {
 impl<T: ?Sized + TextureObject> MovableObject for MovableWrap<T> {
     fn move_with_func(&mut self, t: Clock) {
         let not_stop = self.mv_essential.move_func.is_some();
-        if not_stop {
-            self.set_position((self.mv_essential.move_func.as_ref().unwrap())(
-                self,
-                t - self.mv_essential.mf_set_time,
-            ));
+        if !not_stop {
+            return;
         }
+
+	if let Some(pos) = (self.mv_essential.move_func.as_ref().unwrap())(
+            self,
+            t - self.mv_essential.mf_set_time,
+        ) {
+	    self.set_position(pos);
+	} else {
+	    self.mv_essential.move_func = None;
+	}
     }
 
     // 従う関数を変更する
     fn override_move_func(
         &mut self,
-        move_fn: Option<Box<dyn Fn(&dyn MovableObject, Clock) -> numeric::Point2f>>,
+        move_fn: Option<GenericMoveFn>,
         now: Clock,
     ) {
         self.mv_essential.move_func = move_fn;
@@ -1047,7 +1053,7 @@ impl<T: MovableObject + TextureObject> MovableObject for EffectableWrap<T> {
     // 従う関数を変更する
     fn override_move_func(
         &mut self,
-        move_fn: Option<Box<dyn Fn(&dyn MovableObject, Clock) -> numeric::Point2f>>,
+        move_fn: Option<GenericMoveFn>,
         now: Clock,
     ) {
         self.movable_object.override_move_func(move_fn, now)
