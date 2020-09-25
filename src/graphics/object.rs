@@ -1325,10 +1325,6 @@ impl<T: MovableObject + TextureObject> HasGenericEffect for EffectableWrap<T> {
 impl<T: MovableObject + TextureObject> Effectable for EffectableWrap<T> {
     // 新しくエフェクトを追加するメソッド
     fn effect(&mut self, ctx: &mut ggez::Context, t: Clock) {
-        for f in &self.geffect_essential.effects_list {
-            (f)(&mut self.movable_object, ctx, t);
-        }
-
         let borrowed_movable = &mut self.movable_object;
         self.geffect_essential
             .effects_list
