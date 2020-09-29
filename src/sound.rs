@@ -89,4 +89,10 @@ impl SoundManager {
     pub fn ref_sound_mut(&mut self, handler: SoundHandler) -> &mut PlayableSound {
 	self.playing_map.get_mut(&handler).unwrap()
     }
+
+    pub fn change_global_volume(&mut self, volume: f32) {
+	for (_, bgm) in self.playing_map.iter_mut() {
+	    bgm.set_volume(volume);
+	}
+    }
 }
