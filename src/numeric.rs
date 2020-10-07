@@ -45,10 +45,18 @@ macro_rules! zero_distance {
     };
 }
 
+
 #[macro_export]
 macro_rules! distance {
     ($v1: expr, $v2: expr) => {
         (($v1.x - $v2.x).powf(2.0) + ($v1.y - $v2.y).powf(2.0)).sqrt()
+    };
+}
+
+#[macro_export]
+macro_rules! manhattan_distance {
+    ($v1: expr, $v2: expr) => {
+        (($v1.x as f32 - $v2.x as f32).abs() + ($v1.y as f32 - $v2.y as f32).abs())
     };
 }
 
