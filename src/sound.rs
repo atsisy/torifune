@@ -34,7 +34,7 @@ impl SoundPlayFlags {
 impl Default for SoundPlayFlags {
     fn default() -> Self {
 	SoundPlayFlags {
-	    fadein_mills: 0,
+	    fadein_mills: 50,
 	    pitch: 1.0,
 	    repeat: false,
 	    volume: 1.0,
@@ -93,6 +93,12 @@ impl SoundManager {
     pub fn change_global_volume(&mut self, volume: f32) {
 	for (_, bgm) in self.playing_map.iter_mut() {
 	    bgm.set_volume(volume);
+	}
+    }
+
+    pub fn stop(&mut self, handler: SoundHandler) {
+	if let Some(sound) = self.playing_map.get_mut(&handler) {
+	    sound.stop();
 	}
     }
 }
