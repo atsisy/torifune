@@ -306,6 +306,139 @@ impl MeshShape for Polygon {
     }
 }
 
+pub struct RadiusRect {
+    pos_rect: numeric::Rect,
+    borders: [numeric::Vector2f; 4],
+    mode: ggraphics::DrawMode,
+    color: ggraphics::Color,
+}
+
+impl RadiusRect {
+    ///
+    /// # borders -> [top-left, top-right, bottom-right, bottom-left]
+    ///
+    pub fn new(
+	pos_rect: numeric::Rect,
+	borders: [numeric::Vector2f; 4],
+	mode: ggraphics::DrawMode,
+	color: ggraphics::Color
+    ) -> Self {
+	RadiusRect {
+	    pos_rect: pos_rect,
+	    borders: borders,
+	    mode: mode,
+	    color: color,
+	}
+    }
+
+    pub fn get_drawing_area(&self) -> numeric::Rect {
+	self.pos_rect
+    }
+}
+
+impl MeshShape for RadiusRect {
+    fn add_to_builder<'a>(
+        &self,
+        builder: &'a mut ggraphics::MeshBuilder,
+    ) -> &'a mut ggraphics::MeshBuilder {
+	let core_rect = numeric::Rect::new(
+	    self.pos_rect.x + self.borders[0].x,
+	    self.pos_rect.y + self.borders[0].y,
+	    self.pos_rect.w - (self.borders[0].x + self.borders[1].x.max(self.borders[2].x)),
+	    self.pos_rect.h - (self.borders[0].y + self.borders[3].y.max(self.borders[2].y)),
+	);
+
+	builder
+            .rectangle(
+		self.mode,
+		core_rect,
+		self.color
+	    )
+	    .rectangle(
+		self.mode,
+		numeric::Rect::new(
+		    self.pos_rect.left(),
+		    self.pos_rect.top() + self.borders[0].y,
+		    self.borders[0].x.max(self.borders[3].x),
+		    self.pos_rect.h - self.borders[0].y - self.borders[3].y,
+		),
+		self.color
+	    )
+	    .rectangle(
+		self.mode,
+		numeric::Rect::new(
+		    self.pos_rect.left() + self.borders[0].x,
+		    self.pos_rect.top(),
+		    self.pos_rect.w - self.borders[0].x - self.borders[1].x,
+		    self.borders[0].y.max(self.borders[1].y),
+		),
+		self.color
+	    )
+	    .rectangle(
+		self.mode,
+		numeric::Rect::new(
+		    self.pos_rect.right() - self.borders[1].x.max(self.borders[2].x),
+		    self.pos_rect.top() + self.borders[1].y,
+		    self.borders[1].x.max(self.borders[2].x),
+		    self.pos_rect.h - self.borders[1].y - self.borders[2].y,
+		),
+		self.color
+	    )
+	    .rectangle(
+		self.mode,
+		numeric::Rect::new(
+		    self.pos_rect.left() + self.borders[3].x,
+		    self.pos_rect.bottom() - self.borders[0].y.max(self.borders[3].y),
+		    self.pos_rect.w - self.borders[3].x - self.borders[2].x,
+		    self.borders[3].y.max(self.borders[2].y),
+		),
+		self.color
+	    )
+            .ellipse(
+		self.mode,
+		numeric::Point2f::new(self.pos_rect.x + self.borders[0].x, self.pos_rect.y + self.borders[0].y),
+		self.borders[0].x,
+		self.borders[0].y,
+		0.0001,
+		self.color
+	    )
+	    .ellipse(
+		self.mode,
+		numeric::Point2f::new(
+		    self.pos_rect.right() - self.borders[1].x,
+		    self.pos_rect.top() + self.borders[1].y
+		),
+		self.borders[1].x,
+		self.borders[1].y,
+		0.0001,
+		self.color
+	    )
+    	    .ellipse(
+		self.mode,
+		numeric::Point2f::new(
+		    self.pos_rect.right() - self.borders[2].x,
+		    self.pos_rect.bottom() - self.borders[2].y
+		),
+		self.borders[2].x,
+		self.borders[2].y,
+		0.0001,
+		self.color
+	    )
+	    .ellipse(
+		self.mode,
+		numeric::Point2f::new(
+		    self.pos_rect.x + self.borders[3].x,
+		    self.pos_rect.bottom() - self.borders[3].y
+		),
+		self.borders[3].x,
+		self.borders[3].y,
+		0.0001,
+		self.color
+	    )
+    }
+}
+
+
 pub enum Shape {
     Rectangle(Rectangle),
     Circle(Circle),
@@ -406,5 +539,89 @@ impl<S> DerefMut for DrawableShape<S>
 where S: MeshShape {
     fn deref_mut(&mut self) -> &mut Self::Target {
 	&mut self.shape
+    }
+}
+
+pub struct FramedTextBalloon {
+    inner: DrawableShape<RadiusRect>,
+    outer: DrawableShape<RadiusRect>,
+    drwob_essential: DrawableObjectEssential,
+}
+
+impl FramedTextBalloon {
+    pub fn new(
+	ctx: &mut ggez::Context,
+	pos_rect: numeric::Rect,
+	borders: [numeric::Vector2f; 4],
+	frame_width: f32,
+	inner_color: ggraphics::Color,
+	outer_color: ggraphics::Color,
+	depth: i8,
+    ) -> Self {
+	FramedTextBalloon {
+	    inner: DrawableShape::new(
+		ctx,
+		RadiusRect::new(
+		    numeric::Rect::new(
+			pos_rect.x + frame_width,
+			pos_rect.y + frame_width,
+			pos_rect.w - (frame_width * 2.0),
+			pos_rect.h - (frame_width * 2.0),
+		    ),
+		    borders,
+		    ggraphics::DrawMode::fill(),
+		    inner_color
+		),
+		0,
+		ggraphics::WHITE,
+	    ),
+	    outer: DrawableShape::new(
+		ctx,
+		RadiusRect::new(
+		    pos_rect,
+		    borders,
+		    ggraphics::DrawMode::fill(),
+		    outer_color
+		),
+		0,
+		ggraphics::WHITE,
+	    ),
+	    drwob_essential: DrawableObjectEssential::new(true, depth),
+	}
+    }
+
+    pub fn get_drawing_area(&self) -> numeric::Rect {
+	self.outer.get_drawing_area()
+    }
+}
+
+impl DrawableComponent for FramedTextBalloon {
+    fn draw(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult<()> {
+	if self.is_visible() {
+	    self.outer.draw(ctx)?;
+	    self.inner.draw(ctx)?;
+	}
+
+	Ok(())
+    }
+
+    fn hide(&mut self) {
+        self.drwob_essential.visible = false;
+    }
+
+    fn appear(&mut self) {
+        self.drwob_essential.visible = true;
+    }
+
+    fn is_visible(&self) -> bool {
+        self.drwob_essential.visible
+    }
+
+    fn set_drawing_depth(&mut self, depth: i8) {
+        self.drwob_essential.drawing_depth = depth;
+    }
+
+    fn get_drawing_depth(&self) -> i8 {
+        self.drwob_essential.drawing_depth
     }
 }
